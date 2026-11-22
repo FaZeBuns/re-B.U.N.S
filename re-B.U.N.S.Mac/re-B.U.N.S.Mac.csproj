@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>re-B.U.N.S</AssemblyName>
+    <RootNamespace>ReBuns</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Version>1.6.4</Version>
+    <AssemblyVersion>1.6.4.0</AssemblyVersion>
+    <FileVersion>1.6.4.0</FileVersion>
+    <Product>re-B.U.N.S (macOS)</Product>
+    <Company>FaZeBuns</Company>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\re-B.U.N.S\Model.cs" Link="Model.cs" />
+    <EmbeddedResource Include="Logo.png" LogicalName="Logo.png" />
+    <EmbeddedResource Include="intro.mp3" LogicalName="intro.mp3" />
+    <EmbeddedResource Include="..\assets\emulator.html" LogicalName="emulator.html" />
+    <PackageReference Include="Avalonia" Version="11.1.3" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.1.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.3" />
+  </ItemGroup>
+
+</Project>

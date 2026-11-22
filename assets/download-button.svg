@@ -25,5 +25,5 @@
 
   <!-- Button Text -->
   <text x="86" y="41" fill="#FFFFFF" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="900" letter-spacing="0.8">DOWNLOAD LATEST RELEASE</text>
-  <text x="86" y="62" fill="#F687B3" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="0.4">re-BUNS.exe  ·  Windows 10 / 11 (All-In-One)</text>
+  <text x="86" y="62" fill="#F687B3" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="0.4">Windows (re-BUNS.exe)  ·  macOS (.dmg)</text>
 </svg>

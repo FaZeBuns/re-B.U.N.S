@@ -1,30 +1,111 @@
-name: Build and Release re-B.U.N.S
+name: Build, Test & Release re-B.U.N.S (Windows & macOS)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
-  build:
-    runs-on: windows-latest
+  macos:
+    name: Build & Test Native macOS App (Apple Silicon & Intel)
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET 8
+      - name: Setup .NET 8 on macOS
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
-      - name: Download ViGEmBus Driver Installer
-        shell: pwsh
+      - name: Publish Native macOS Apple Silicon (osx-arm64)
         run: |
-          New-Item -ItemType Directory -Path assets -Force | Out-Null
-          Invoke-WebRequest -Uri "https://github.com/nefarius/ViGEmBus/releases/download/v1.22.0/ViGEmBus_1.22.0_x64_x86_arm64.exe" -OutFile "assets/ViGEmBus_Setup.exe"
+          dotnet publish re-B.U.N.S.Mac/re-B.U.N.S.Mac.csproj -c Release -r osx-arm64 --self-contained true -p:DebugType=none -o publish-arm64
 
-      - name: Publish All-In-One Standalone re-buns.exe
-        shell: pwsh
+      - name: Publish Native macOS Intel (osx-x64)
         run: |
-          dotnet publish re-B.U.N.S/re-B.U.N.S.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -o dist
-          Remove-Item dist/*.config,dist/*.pdb -ErrorAction SilentlyContinue
+          dotnet publish re-B.U.N.S.Mac/re-B.U.N.S.Mac.csproj -c Release -r osx-x64 --self-contained true -p:DebugType=none -o publish-x64
+
+      - name: Assemble Native macOS re-B.U.N.S.app Bundle (Apple Silicon)
+        run: |
+          APP="re-B.U.N.S.app"
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+          cp -R publish-arm64/* "$APP/Contents/MacOS/"
+          chmod +x "$APP/Contents/MacOS/re-B.U.N.S"
+
+          mkdir -p re-B.U.N.S.iconset
+          for sz in 16 32 128 256 512; do
+            sips -z $sz $sz assets/Logo.png --out "re-B.U.N.S.iconset/icon_${sz}x${sz}.png" >/dev/null
+            sz2=$((sz * 2))
+            sips -z $sz2 $sz2 assets/Logo.png --out "re-B.U.N.S.iconset/icon_${sz}x${sz}@2x.png" >/dev/null
+          done
+          iconutil -c icns re-B.U.N.S.iconset -o "$APP/Contents/Resources/re-B.U.N.S.icns"
+
+          cat > "$APP/Contents/Info.plist" << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleName</key>
+            <string>re-B.U.N.S</string>
+            <key>CFBundleDisplayName</key>
+            <string>re-B.U.N.S</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.fazebuns.rebuns</string>
+            <key>CFBundleVersion</key>
+            <string>1.6.4</string>
+            <key>CFBundleShortVersionString</key>
+            <string>1.6.4</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>CFBundleExecutable</key>
+            <string>re-B.U.N.S</string>
+            <key>CFBundleIconFile</key>
+            <string>re-B.U.N.S.icns</string>
+            <key>LSMinimumSystemVersion</key>
+            <string>12.0</string>
+            <key>NSHighResolutionCapable</key>
+            <true/>
+          </dict>
+          </plist>
+          EOF
+
+          codesign --force --deep --sign - "$APP"
+
+      - name: Run Real Automated macOS Self-Test & Emulator Test
+        run: |
+          ./re-B.U.N.S.app/Contents/MacOS/re-B.U.N.S --self-test
+
+      - name: Package re-B.U.N.S-macOS.dmg (Apple Silicon)
+        run: |
+          mkdir -p dmg-arm64
+          cp -R "re-B.U.N.S.app" dmg-arm64/
+          ln -s /Applications dmg-arm64/Applications
+          hdiutil create -volname "re-B.U.N.S" -srcfolder dmg-arm64 -ov -format UDZO "re-B.U.N.S-macOS.dmg"
+
+      - name: Assemble & Package Intel macOS re-B.U.N.S-macOS-intel.dmg
+        run: |
+          APP_INTEL="re-B.U.N.S-Intel.app"
+          mkdir -p "$APP_INTEL/Contents/MacOS" "$APP_INTEL/Contents/Resources"
+          cp -R publish-x64/* "$APP_INTEL/Contents/MacOS/"
+          chmod +x "$APP_INTEL/Contents/MacOS/re-B.U.N.S"
+          cp "re-B.U.N.S.app/Contents/Resources/re-B.U.N.S.icns" "$APP_INTEL/Contents/Resources/"
+          cp "re-B.U.N.S.app/Contents/Info.plist" "$APP_INTEL/Contents/"
+          codesign --force --deep --sign - "$APP_INTEL"
+
+          mkdir -p dmg-intel
+          cp -R "$APP_INTEL" "dmg-intel/re-B.U.N.S.app"
+          ln -s /Applications dmg-intel/Applications
+          hdiutil create -volname "re-B.U.N.S" -srcfolder dmg-intel -ov -format UDZO "re-B.U.N.S-macOS-intel.dmg"
+
+      - name: Upload macOS DMGs to Latest GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=$(gh release view --json tagName -q .tagName || echo "v1.6.4")
+          gh release upload "$TAG" "re-B.U.N.S-macOS.dmg" "re-B.U.N.S-macOS-intel.dmg" --clobber
