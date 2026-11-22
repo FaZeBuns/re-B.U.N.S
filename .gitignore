@@ -1,0 +1,9 @@
+bin/
+obj/
+dist/
+.vs/
+*.user
+*.suo
+*.pdb
+assets/ViGEmBus_Setup.exe
+publish-release.ps1

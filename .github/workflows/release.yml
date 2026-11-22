@@ -1,0 +1,30 @@
+name: Build and Release re-B.U.N.S
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Download ViGEmBus Driver Installer
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path assets -Force | Out-Null
+          Invoke-WebRequest -Uri "https://github.com/nefarius/ViGEmBus/releases/download/v1.22.0/ViGEmBus_1.22.0_x64_x86_arm64.exe" -OutFile "assets/ViGEmBus_Setup.exe"
+
+      - name: Publish All-In-One Standalone re-buns.exe
+        shell: pwsh
+        run: |
+          dotnet publish re-B.U.N.S/re-B.U.N.S.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -o dist
+          Remove-Item dist/*.config,dist/*.pdb -ErrorAction SilentlyContinue

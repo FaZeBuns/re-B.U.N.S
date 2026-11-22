@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>re-B.U.N.S.ico</ApplicationIcon>
+    <AssemblyName>re-BUNS</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>ReBuns</RootNamespace>
+    <Version>1.6.4</Version>
+    <AssemblyVersion>1.6.4.0</AssemblyVersion>
+    <FileVersion>1.6.4.0</FileVersion>
+    <Product>re-B.U.N.S</Product>
+    <Company>FaZeBuns</Company>
+    <Description>re-B.U.N.S — Native Windows Keyboard &amp; Mouse to Xbox Controller Remapper for GTA 6</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="re-B.U.N.S.ico" />
+    <Resource Include="Logo.png" />
+    <EmbeddedResource Include="intro.mp3" LogicalName="intro.mp3" />
+    <EmbeddedResource Include="..\assets\ViGEmBus_Setup.exe" Link="ViGEmBus_Setup.exe" LogicalName="ViGEmBus_Setup.exe" />
+    <PackageReference Include="Nefarius.ViGEm.Client" Version="1.21.256" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+</Project>
