@@ -14,7 +14,7 @@ permissions:
 jobs:
   macos:
     name: Build & Test Native macOS App (Apple Silicon & Intel)
-    runs-on: macos-14
+    runs-on: macos-13
     steps:
       - uses: actions/checkout@v4
 
@@ -79,7 +79,13 @@ jobs:
 
       - name: Run Real Automated macOS Self-Test & Emulator Test
         run: |
-          ./re-B.U.N.S.app/Contents/MacOS/re-B.U.N.S --self-test
+          if [ "$(uname -m)" = "x86_64" ]; then
+            chmod +x publish-x64/re-B.U.N.S
+            ./publish-x64/re-B.U.N.S --self-test
+          else
+            chmod +x publish-arm64/re-B.U.N.S
+            ./publish-arm64/re-B.U.N.S --self-test
+          fi
 
       - name: Package re-B.U.N.S-macOS.dmg (Apple Silicon)
         run: |
