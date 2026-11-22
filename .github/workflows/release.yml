@@ -109,9 +109,8 @@ jobs:
           ln -s /Applications dmg-intel/Applications
           hdiutil create -volname "re-B.U.N.S" -srcfolder dmg-intel -ov -format UDZO "re-B.U.N.S-macOS-intel.dmg"
 
-      - name: Upload macOS DMGs to Latest GitHub Release
+      - name: Upload macOS DMGs to macOS GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=$(gh release view --json tagName -q .tagName || echo "v1.6.4")
-          gh release upload "$TAG" "re-B.U.N.S-macOS.dmg" "re-B.U.N.S-macOS-intel.dmg" --clobber
+          gh release upload "v1.6.4-mac" "re-B.U.N.S-macOS.dmg" "re-B.U.N.S-macOS-intel.dmg" --clobber
