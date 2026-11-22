@@ -39,8 +39,8 @@
 3. Choose your GTA 6 Control Scheme preset and click **`▶ START VIRTUAL PAD`**.
 
 ### 🍏 macOS Setup (3 Steps)
-1. Download **[`re-B.U.N.S-macOS.dmg`](https://github.com/FaZeBuns/re-B.U.N.S/releases/latest)**.
-2. Open the `.dmg` and drag **`re-B.U.N.S.app`** into your **`/Applications`** folder.
+1. Download **[`re-B.U.N.S-macOS.dmg`](https://github.com/FaZeBuns/re-B.U.N.S/releases/latest)** (or **`re-B.U.N.S-macOS.zip`**).
+2. Drag **`re-B.U.N.S.app`** into your **`/Applications`** folder.
 3. Open **System Settings → Privacy & Security → Accessibility** and enable **`re-B.U.N.S`**.
 4. Click **`▶ START VIRTUAL PAD`**, then launch your game or click **`🌐 Launch Xbox Cloud`**!
 
