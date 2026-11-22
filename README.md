@@ -8,18 +8,22 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/latest">
-    <img src="assets/download-button.svg" alt="Download Latest Release" width="420" />
+  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.4-windows">
+    <img src="assets/download-windows.svg" alt="Download for Windows" width="410" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.4-mac">
+    <img src="assets/download-mac.svg" alt="Download for macOS" width="410" />
   </a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/latest">
-    <img src="https://img.shields.io/badge/Windows-re--BUNS.exe-blue?logo=windows&style=for-the-badge" alt="Windows Download" />
+  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.4-windows">
+    <img src="https://img.shields.io/badge/Windows-re--BUNS.exe-00a2ed?logo=windows&style=for-the-badge" alt="Windows Download" />
   </a>
   &nbsp;
-  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/latest">
-    <img src="https://img.shields.io/badge/macOS-re--B.U.N.S--macOS.dmg-black?logo=apple&style=for-the-badge" alt="macOS Download" />
+  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.4-mac">
+    <img src="https://img.shields.io/badge/macOS-re--B.U.N.S--macOS.zip-3ddc97?logo=apple&style=for-the-badge" alt="macOS Download" />
   </a>
   &nbsp;
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License" />
@@ -34,13 +38,13 @@
 ## 🚀 Downloads & Quick Start
 
 ### 🪟 Windows Setup (3 Steps)
-1. Download **[`re-BUNS.exe`](https://github.com/FaZeBuns/re-B.U.N.S/releases/latest)**.
+1. Download **[`re-BUNS.exe`](https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.4-windows)** (via the Windows button above).
 2. Double-click **`re-BUNS.exe`** (single standalone file — if ViGEmBus driver is needed, it installs automatically with 1 click).
 3. Choose your GTA 6 Control Scheme preset and click **`▶ START VIRTUAL PAD`**.
 
 ### 🍏 macOS Setup (3 Steps)
-1. Download **[`re-B.U.N.S-macOS.dmg`](https://github.com/FaZeBuns/re-B.U.N.S/releases/latest)** (or **`re-B.U.N.S-macOS.zip`**).
-2. Drag **`re-B.U.N.S.app`** into your **`/Applications`** folder.
+1. Download **[`re-B.U.N.S-macOS.zip`](https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.4-mac)** (via the macOS button above).
+2. Extract the zip and drag **`re-B.U.N.S.app`** into your **`/Applications`** folder.
 3. Open **System Settings → Privacy & Security → Accessibility** and enable **`re-B.U.N.S`**.
 4. Click **`▶ START VIRTUAL PAD`**, then launch your game or click **`🌐 Launch Xbox Cloud`**!
 
