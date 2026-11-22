@@ -250,7 +250,7 @@ public class GtaLayoutWindow : Window
 /// <summary>Popup shown whenever the Virtual Pad is started, informing the user of Windows Key (Pause/Play) and Ctrl+Alt+Delete (Stop). Does NOT auto-close.</summary>
 public class VirtualPadStartedWindow : Window
 {
-    public VirtualPadStartedWindow(string activeSchemeName)
+    public VirtualPadStartedWindow(string activeSchemeName, ControllerType controllerType = ControllerType.Xbox)
     {
         Title = "re-B.U.N.S — Virtual Pad Controls";
         Width = 540;
@@ -272,18 +272,19 @@ public class VirtualPadStartedWindow : Window
             Padding = new Thickness(24, 20, 24, 20)
         };
 
+        string padName = controllerType == ControllerType.PlayStation ? "PlayStation (DualShock 4)" : "Xbox 360";
         var stack = new StackPanel();
         stack.Children.Add(new TextBlock
         {
-            Text = "🎮   VIRTUAL PAD READY",
+            Text = $"🎮   VIRTUAL PAD READY  ·  {padName.ToUpper()}",
             FontSize = 13,
             FontWeight = FontWeights.ExtraBold,
             Foreground = new SolidColorBrush(Color.FromRgb(0x3D, 0xDC, 0x97))
         });
         stack.Children.Add(new TextBlock
         {
-            Text = $"Active Preset: {activeSchemeName}",
-            FontSize = 18,
+            Text = $"Active Preset: {activeSchemeName} ({padName})",
+            FontSize = 17,
             FontWeight = FontWeights.ExtraBold,
             Foreground = Brushes.White,
             Margin = new Thickness(0, 4, 0, 14)

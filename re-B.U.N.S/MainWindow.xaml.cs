@@ -24,8 +24,10 @@ public partial class MainWindow : Window
     ReleaseInfo _pendingUpdate;
     SchematicHoldView _holdView = SchematicHoldView.TapAndHold;
     string _previewCategory = "ON FOOT";
+    ControllerType _controllerType = ControllerType.Xbox;
 
     readonly Dictionary<PadTarget, Shape> _shapes = new();
+    readonly Dictionary<PadTarget, TextBlock> _spotTexts = new();
     Ellipse _padLsDot, _padRsDot;
     TextBlock _schematicHeaderText;
 
@@ -71,6 +73,10 @@ public partial class MainWindow : Window
         int idx = _profiles.FindIndex(p => p.Name == AppSettings.Instance.LastSelectedProfile);
         if (idx < 0) idx = _profiles.FindIndex(p => p.LayoutId == GtaLayoutId.ReBuns);
         ProfileList.SelectedIndex = Math.Max(0, idx);
+
+        _controllerType = _cur?.ControllerType ?? AppSettings.Instance.ControllerType;
+        _engine.ControllerType = _controllerType;
+        UpdateControllerTypeButtons();
 
         var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
         t.Tick += (_, _) => Live();
@@ -314,6 +320,61 @@ public partial class MainWindow : Window
         }
     }
 
+    void XboxToggle_Click(object sender, RoutedEventArgs e) => SetControllerType(ControllerType.Xbox);
+    void PsToggle_Click(object sender, RoutedEventArgs e) => SetControllerType(ControllerType.PlayStation);
+
+    void SetControllerType(ControllerType type)
+    {
+        _controllerType = type;
+        if (_cur != null)
+        {
+            _cur.ControllerType = type;
+            try { _cur.Save(); } catch { }
+        }
+        AppSettings.Instance.ControllerType = type;
+        AppSettings.Instance.Save();
+        _engine.ControllerType = type;
+
+        if (_engine.Running)
+        {
+            _engine.Stop();
+            _engine.Start();
+        }
+
+        UpdateControllerTypeButtons();
+        RefreshPadLabels();
+    }
+
+    void UpdateControllerTypeButtons()
+    {
+        bool isXbox = _controllerType == ControllerType.Xbox;
+        var inactiveBg = Brushes.Transparent;
+        var inactiveBorder = Brushes.Transparent;
+        var inactiveFg = new SolidColorBrush(Color.FromRgb(0xC8, 0xA2, 0xC8));
+
+        if (XboxToggleBtn != null && PsToggleBtn != null)
+        {
+            XboxToggleBtn.Background = isXbox ? new SolidColorBrush(Color.FromRgb(0x10, 0x7C, 0x10)) : inactiveBg;
+            XboxToggleBtn.BorderBrush = isXbox ? new SolidColorBrush(Color.FromRgb(0x3D, 0xDC, 0x97)) : inactiveBorder;
+            XboxToggleBtn.Foreground = isXbox ? Brushes.White : inactiveFg;
+
+            PsToggleBtn.Background = !isXbox ? new SolidColorBrush(Color.FromRgb(0x00, 0x37, 0x91)) : inactiveBg;
+            PsToggleBtn.BorderBrush = !isXbox ? new SolidColorBrush(Color.FromRgb(0x56, 0x9C, 0xD6)) : inactiveBorder;
+            PsToggleBtn.Foreground = !isXbox ? Brushes.White : inactiveFg;
+        }
+
+        if (SchemeXboxBtn != null && SchemePsBtn != null)
+        {
+            SchemeXboxBtn.Background = isXbox ? new SolidColorBrush(Color.FromRgb(0x10, 0x7C, 0x10)) : new SolidColorBrush(Color.FromRgb(0x2B, 0x16, 0x38));
+            SchemeXboxBtn.BorderBrush = isXbox ? new SolidColorBrush(Color.FromRgb(0x3D, 0xDC, 0x97)) : new SolidColorBrush(Color.FromRgb(0x5A, 0x33, 0x66));
+            SchemeXboxBtn.Foreground = isXbox ? Brushes.White : inactiveFg;
+
+            SchemePsBtn.Background = !isXbox ? new SolidColorBrush(Color.FromRgb(0x00, 0x37, 0x91)) : new SolidColorBrush(Color.FromRgb(0x2B, 0x16, 0x38));
+            SchemePsBtn.BorderBrush = !isXbox ? new SolidColorBrush(Color.FromRgb(0x56, 0x9C, 0xD6)) : new SolidColorBrush(Color.FromRgb(0x5A, 0x33, 0x66));
+            SchemePsBtn.Foreground = !isXbox ? Brushes.White : inactiveFg;
+        }
+    }
+
     void OpenLayoutPicker_Click(object sender, RoutedEventArgs e) => ShowLayoutPickerDialog();
 
     void ShowLayoutPickerDialog()
@@ -542,6 +603,7 @@ public partial class MainWindow : Window
         Pad.Children.Add(dpadDish);
 
         // Controller buttons on the white controller
+        _spotTexts.Clear();
         foreach (var s in Spots)
         {
             Shape sh = s.Rect
@@ -564,7 +626,7 @@ public partial class MainWindow : Window
 
             var tb = new TextBlock
             {
-                Text = s.Text,
+                Text = ControllerNames.Glyph(s.T, _controllerType),
                 FontWeight = FontWeights.ExtraBold,
                 FontSize = s.R >= 13 ? 11 : 8.5,
                 Foreground = Brushes.White,
@@ -574,6 +636,7 @@ public partial class MainWindow : Window
             Canvas.SetLeft(tb, s.X - tb.DesiredSize.Width / 2);
             Canvas.SetTop(tb, s.Y - tb.DesiredSize.Height / 2);
             Pad.Children.Add(tb);
+            _spotTexts[s.T] = tb;
         }
 
         // Live stick deflection dots on the controller sticks
@@ -912,7 +975,7 @@ public partial class MainWindow : Window
             }
             var binds = _cur.Bindings.Where(b => string.Equals(b.Input, cap.Input, StringComparison.OrdinalIgnoreCase) && b.Target != PadTarget.None).ToList();
             bool has = binds.Count > 0;
-            cap.MapText.Text = has ? string.Join("+", binds.Select(b => InputNames.ShortTarget(b.Target))) : "—";
+            cap.MapText.Text = has ? string.Join("+", binds.Select(b => InputNames.ShortTarget(b.Target, _controllerType))) : "—";
             cap.MapText.Foreground = has ? new SolidColorBrush(Color.FromRgb(0x3D, 0xDC, 0x97)) : (Brush)FindResource("Dim");
             cap.Box.Background = has ? MappedCapBg : UnmappedCapBg;
             cap.Box.BorderBrush = cap.Input == _selKeyInput ? SelStroke : new SolidColorBrush(has ? Color.FromRgb(0x3D, 0xDC, 0x97) : Color.FromRgb(0x55, 0x33, 0x64));
@@ -1034,13 +1097,28 @@ public partial class MainWindow : Window
     {
         UpdateSchemeHeader();
 
+        if (_schematicHeaderText != null)
+        {
+            _schematicHeaderText.Text = _previewCategory + (_controllerType == ControllerType.PlayStation ? "  ·  PLAYSTATION" : "  ·  XBOX");
+            _schematicHeaderText.Measure(new Size(400, 50));
+            Canvas.SetLeft(_schematicHeaderText, 540 - _schematicHeaderText.DesiredSize.Width / 2);
+        }
+
+        foreach (var (t, tb) in _spotTexts)
+        {
+            tb.Text = ControllerNames.Glyph(t, _controllerType);
+            tb.Measure(new Size(100, 100));
+            var s = Spots.FirstOrDefault(x => x.T == t);
+            if (s != null) Canvas.SetLeft(tb, s.X - tb.DesiredSize.Width / 2);
+        }
+
         // Update all 18 GTA 6 Callout rows
         foreach (var ui in _calloutRows)
         {
             var spec = GetCalloutSpec(ui);
             if (spec == null) continue;
 
-            ui.GlyphText.Text = spec.ButtonGlyph;
+            ui.GlyphText.Text = ControllerNames.Glyph(spec.Target, _controllerType);
             bool showHoldRing = false;
             string label;
 
@@ -1067,7 +1145,7 @@ public partial class MainWindow : Window
                 }
             }
 
-            ui.ActionText.Text = label;
+            ui.ActionText.Text = ControllerNames.FormatLabel(label, _controllerType);
             ui.HoldRing.Visibility = showHoldRing ? Visibility.Visible : Visibility.Collapsed;
             ui.KeyBadgeText.Text = GetKeysSummaryForTarget(spec.Target);
             ApplyCalloutRowColors(ui);
@@ -1089,14 +1167,15 @@ public partial class MainWindow : Window
         var curId = _cur.LayoutId == GtaLayoutId.Custom ? GtaLayoutId.Default : _cur.LayoutId;
         var schemeInfo = Profile.GtaLayouts.FirstOrDefault(x => x.Id == curId) ?? Profile.GtaLayouts[0];
         var matchSpec = schemeInfo.Callouts.FirstOrDefault(c => c.Target == _sel);
+        var glyph = ControllerNames.Glyph(_sel, _controllerType);
 
         SelName.Text = matchSpec != null
-            ? (matchSpec.HoldLabel != null ? $"{matchSpec.TapLabel}  /  ◎ {matchSpec.HoldLabel}  [{matchSpec.ButtonGlyph}]" : $"{matchSpec.TapLabel}  [{matchSpec.ButtonGlyph}]")
-            : $"Controller: {_sel}";
+            ? ControllerNames.FormatLabel(matchSpec.HoldLabel != null ? $"{matchSpec.TapLabel}  /  ◎ {matchSpec.HoldLabel}  [{glyph}]" : $"{matchSpec.TapLabel}  [{glyph}]", _controllerType)
+            : $"Controller: {ControllerNames.ButtonName(_sel, _controllerType)}";
 
         var matching = _cur.Bindings.Where(b => b.Target == _sel).ToList();
         SelSub.Text = matchSpec?.HoldLabel != null
-            ? $"Tap key = {matchSpec.TapLabel}  ·  Hold key = {matchSpec.HoldLabel} (or bind a dedicated Double-Tap / Long-Hold key below):"
+            ? ControllerNames.FormatLabel($"Tap key = {matchSpec.TapLabel}  ·  Hold key = {matchSpec.HoldLabel} (or bind a dedicated Double-Tap / Long-Hold key below):", _controllerType)
             : $"{matching.Count} keyboard/mouse binding(s) assigned:";
 
         foreach (var b in matching)
@@ -1463,6 +1542,9 @@ public partial class MainWindow : Window
         if (ProfileList.SelectedItem is not Profile p) return;
         SyncProfile();
         _cur = p;
+        _controllerType = p.ControllerType;
+        _engine.ControllerType = _controllerType;
+        UpdateControllerTypeButtons();
         AppSettings.Instance.LastSelectedProfile = p.Name;
         AppSettings.Instance.Save();
         _lastJson = "";
@@ -1545,6 +1627,7 @@ public partial class MainWindow : Window
         else
         {
             SyncProfile();
+            _engine.ControllerType = _controllerType;
             // Show the persistent Windows Key / Ctrl+Alt+Delete popup first (does NOT auto-close; locks as soon as user clicks Got It!)
             ShowVirtualPadStartedPopup();
             if (!_engine.Start())
@@ -1566,7 +1649,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            var popup = new VirtualPadStartedWindow(_cur?.Name ?? "★ re-B.U.N.S") { Owner = this };
+            var popup = new VirtualPadStartedWindow(_cur?.Name ?? "★ re-B.U.N.S", _controllerType) { Owner = this };
             popup.ShowDialog();
         }
         catch { }

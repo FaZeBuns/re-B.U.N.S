@@ -16,6 +16,13 @@
                 <DockPanel>
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Top">
                         <TextBlock x:Name="FgProc" Foreground="{StaticResource Dim}" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12"/>
+                        <!-- Xbox / PlayStation Controller Switcher -->
+                        <Border Background="#2B1638" BorderBrush="#754A84" BorderThickness="1" CornerRadius="4" Padding="3" Margin="0,0,10,0" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="XboxToggleBtn" Content="🎮 Xbox" Click="XboxToggle_Click" FontWeight="ExtraBold" FontSize="11.5" Padding="8,4" Background="#107C10" BorderBrush="#3DDC97" Foreground="White"/>
+                                <Button x:Name="PsToggleBtn" Content="🎮 PlayStation" Click="PsToggle_Click" FontWeight="Bold" FontSize="11.5" Padding="8,4" Background="Transparent" BorderBrush="Transparent" Foreground="#C8A2C8"/>
+                            </StackPanel>
+                        </Border>
                         <Button x:Name="DriverBtn" Content="✓ ViGEmBus Ready" Click="DriverBtn_Click" FontSize="12" Padding="10,5" Margin="0,0,6,0"/>
                         <Button x:Name="UpdateBtn" Content="⟳ Check Updates" Click="UpdateBtn_Click" FontSize="12" Padding="10,5" Margin="0,0,10,0"/>
                         <Border x:Name="StatusPill" CornerRadius="4" Padding="12,6" Background="#3B1D47" BorderBrush="#754A84" BorderThickness="1" Margin="0,0,10,0" VerticalAlignment="Center">
@@ -66,7 +73,16 @@
                             <!-- Left Column: CONTROL SCHEME 1/4..4/4 + PREVIEW + QUICK BIND -->
                             <DockPanel Grid.Column="0" Margin="0,4,22,0">
                                 <StackPanel DockPanel.Dock="Top">
-                                    <TextBlock Text="CONTROL SCHEME" FontSize="18" FontWeight="ExtraBold" Foreground="White" Margin="0,0,0,10"/>
+                                    <TextBlock Text="CONTROL SCHEME" FontSize="18" FontWeight="ExtraBold" Foreground="White" Margin="0,0,0,6"/>
+
+                                    <!-- Controller Layout Mode Switcher -->
+                                    <DockPanel Margin="0,0,0,10">
+                                        <TextBlock Text="CONTROLLER EMULATION" FontSize="11" FontWeight="ExtraBold" Foreground="{StaticResource Dim}" VerticalAlignment="Center"/>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <Button x:Name="SchemeXboxBtn" Content="🎮 Xbox" Click="XboxToggle_Click" FontWeight="Bold" FontSize="11" Padding="7,3" Margin="0,0,4,0"/>
+                                            <Button x:Name="SchemePsBtn" Content="🎮 PlayStation" Click="PsToggle_Click" FontWeight="Bold" FontSize="11" Padding="7,3"/>
+                                        </StackPanel>
+                                    </DockPanel>
 
                                     <!-- White Gradient Selector Box ("★ ReBuns   1 / 4   <  >") -->
                                     <Border Height="46" CornerRadius="2" Cursor="Hand" MouseLeftButtonDown="SchemeBox_Click">

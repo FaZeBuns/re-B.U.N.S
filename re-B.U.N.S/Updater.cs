@@ -18,6 +18,7 @@ public class AppSettings
     public bool HasCompletedInitialSetup { get; set; } = false;
     public bool ShowLayoutPickerOnStartup { get; set; } = false;
     public string LastSelectedProfile { get; set; } = "";
+    public ControllerType ControllerType { get; set; } = ControllerType.Xbox;
 
     static string FilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),

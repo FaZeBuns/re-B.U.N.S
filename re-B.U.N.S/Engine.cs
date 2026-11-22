@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using Nefarius.ViGEm.Client;
 using Nefarius.ViGEm.Client.Targets;
 using Nefarius.ViGEm.Client.Targets.Xbox360;
+using Nefarius.ViGEm.Client.Targets.DualShock4;
 
 namespace ReBuns;
 
@@ -45,13 +46,39 @@ public static class InputNames
         _ => name.StartsWith("D") && name.Length == 2 && char.IsDigit(name[1]) ? name[1..] : name
     };
 
-    public static string ShortTarget(PadTarget t) => t switch
+    public static string ShortTarget(PadTarget t, ControllerType type = ControllerType.Xbox)
     {
-        PadTarget.LStickUp => "LS↑", PadTarget.LStickDown => "LS↓", PadTarget.LStickLeft => "LS←", PadTarget.LStickRight => "LS→",
-        PadTarget.RStickUp => "RS↑", PadTarget.RStickDown => "RS↓", PadTarget.RStickLeft => "RS←", PadTarget.RStickRight => "RS→",
-        PadTarget.DUp => "D↑", PadTarget.DDown => "D↓", PadTarget.DLeft => "D←", PadTarget.DRight => "D→",
-        _ => t.ToString()
-    };
+        if (type == ControllerType.PlayStation)
+        {
+            return t switch
+            {
+                PadTarget.A => "✕",
+                PadTarget.B => "○",
+                PadTarget.X => "□",
+                PadTarget.Y => "△",
+                PadTarget.LB => "L1",
+                PadTarget.RB => "R1",
+                PadTarget.LT => "L2",
+                PadTarget.RT => "R2",
+                PadTarget.LS => "L3",
+                PadTarget.RS => "R3",
+                PadTarget.Back => "Share",
+                PadTarget.Start => "Opt",
+                PadTarget.Guide => "PS",
+                PadTarget.LStickUp => "L3↑", PadTarget.LStickDown => "L3↓", PadTarget.LStickLeft => "L3←", PadTarget.LStickRight => "L3→",
+                PadTarget.RStickUp => "R3↑", PadTarget.RStickDown => "R3↓", PadTarget.RStickLeft => "R3←", PadTarget.RStickRight => "R3→",
+                PadTarget.DUp => "D↑", PadTarget.DDown => "D↓", PadTarget.DLeft => "D←", PadTarget.DRight => "D→",
+                _ => t.ToString()
+            };
+        }
+        return t switch
+        {
+            PadTarget.LStickUp => "LS↑", PadTarget.LStickDown => "LS↓", PadTarget.LStickLeft => "LS←", PadTarget.LStickRight => "LS→",
+            PadTarget.RStickUp => "RS↑", PadTarget.RStickDown => "RS↓", PadTarget.RStickLeft => "RS←", PadTarget.RStickRight => "RS→",
+            PadTarget.DUp => "D↑", PadTarget.DDown => "D↓", PadTarget.DLeft => "D←", PadTarget.DRight => "D→",
+            _ => t.ToString()
+        };
+    }
 }
 
 public struct PadSnapshot
@@ -109,7 +136,9 @@ public sealed class Engine : IDisposable
     volatile bool _stop;
 
     ViGEmClient _client;
-    IXbox360Controller _pad;
+    IXbox360Controller _xboxPad;
+    IDualShock4Controller _ds4Pad;
+    public ControllerType ControllerType { get; set; } = ControllerType.Xbox;
 
     public PadSnapshot Snapshot;
 
@@ -160,9 +189,18 @@ public sealed class Engine : IDisposable
         try
         {
             _client ??= new ViGEmClient();
-            _pad = _client.CreateXbox360Controller();
-            _pad.AutoSubmitReport = false;
-            _pad.Connect();
+            if (ControllerType == ControllerType.PlayStation)
+            {
+                _ds4Pad = _client.CreateDualShock4Controller();
+                _ds4Pad.AutoSubmitReport = false;
+                _ds4Pad.Connect();
+            }
+            else
+            {
+                _xboxPad = _client.CreateXbox360Controller();
+                _xboxPad.AutoSubmitReport = false;
+                _xboxPad.Connect();
+            }
             Error = null;
         }
         catch (Exception ex)
@@ -187,8 +225,10 @@ public sealed class Engine : IDisposable
         _tickThread?.Join(500);
         SetLocked(false);
         Running = false;
-        try { _pad?.Disconnect(); } catch { }
-        _pad = null;
+        try { _xboxPad?.Disconnect(); } catch { }
+        try { _ds4Pad?.Disconnect(); } catch { }
+        _xboxPad = null;
+        _ds4Pad = null;
         StateChanged?.Invoke();
     }
 
@@ -535,29 +575,79 @@ public sealed class Engine : IDisposable
             LX = Ax(lx), LY = Ax(ly), RX = Ax(rx), RY = Ax(ry)
         };
         Snapshot = s;
-        if (_pad == null) return;
+        if (_xboxPad == null && _ds4Pad == null) return;
         if (_hasSent && s.ButtonsMask == _lastSent.ButtonsMask && s.LT == _lastSent.LT && s.RT == _lastSent.RT &&
             s.LX == _lastSent.LX && s.LY == _lastSent.LY && s.RX == _lastSent.RX && s.RY == _lastSent.RY) return;
         _lastSent = s;
         _hasSent = true;
         try
         {
-            void Btn(Xbox360Button b, PadTarget t) => _pad.SetButtonState(b, s.Has(t));
-            Btn(Xbox360Button.A, PadTarget.A); Btn(Xbox360Button.B, PadTarget.B);
-            Btn(Xbox360Button.X, PadTarget.X); Btn(Xbox360Button.Y, PadTarget.Y);
-            Btn(Xbox360Button.LeftShoulder, PadTarget.LB); Btn(Xbox360Button.RightShoulder, PadTarget.RB);
-            Btn(Xbox360Button.Back, PadTarget.Back); Btn(Xbox360Button.Start, PadTarget.Start);
-            Btn(Xbox360Button.Guide, PadTarget.Guide);
-            Btn(Xbox360Button.LeftThumb, PadTarget.LS); Btn(Xbox360Button.RightThumb, PadTarget.RS);
-            Btn(Xbox360Button.Up, PadTarget.DUp); Btn(Xbox360Button.Down, PadTarget.DDown);
-            Btn(Xbox360Button.Left, PadTarget.DLeft); Btn(Xbox360Button.Right, PadTarget.DRight);
-            _pad.SetSliderValue(Xbox360Slider.LeftTrigger, s.LT);
-            _pad.SetSliderValue(Xbox360Slider.RightTrigger, s.RT);
-            _pad.SetAxisValue(Xbox360Axis.LeftThumbX, s.LX);
-            _pad.SetAxisValue(Xbox360Axis.LeftThumbY, s.LY);
-            _pad.SetAxisValue(Xbox360Axis.RightThumbX, s.RX);
-            _pad.SetAxisValue(Xbox360Axis.RightThumbY, s.RY);
-            _pad.SubmitReport();
+            if (_ds4Pad != null)
+            {
+                void DsBtn(DualShock4Button b, PadTarget t) => _ds4Pad.SetButtonState(b, s.Has(t));
+                DsBtn(DualShock4Button.Cross, PadTarget.A);
+                DsBtn(DualShock4Button.Circle, PadTarget.B);
+                DsBtn(DualShock4Button.Square, PadTarget.X);
+                DsBtn(DualShock4Button.Triangle, PadTarget.Y);
+                DsBtn(DualShock4Button.ShoulderLeft, PadTarget.LB);
+                DsBtn(DualShock4Button.ShoulderRight, PadTarget.RB);
+                DsBtn(DualShock4Button.TriggerLeft, PadTarget.LT);
+                DsBtn(DualShock4Button.TriggerRight, PadTarget.RT);
+                DsBtn(DualShock4Button.ThumbLeft, PadTarget.LS);
+                DsBtn(DualShock4Button.ThumbRight, PadTarget.RS);
+                DsBtn(DualShock4Button.Share, PadTarget.Back);
+                DsBtn(DualShock4Button.Options, PadTarget.Start);
+
+                byte spec = 0;
+                if (s.Has(PadTarget.Guide)) spec |= 1; // PS Button
+                if (s.Has(PadTarget.Back)) spec |= 2;  // Touchpad click
+                _ds4Pad.SetSpecialButtonsFull(spec);
+
+                bool dUp = s.Has(PadTarget.DUp), dDown = s.Has(PadTarget.DDown);
+                bool dLeft = s.Has(PadTarget.DLeft), dRight = s.Has(PadTarget.DRight);
+                DualShock4DPadDirection dir = DualShock4DPadDirection.None;
+                if (dUp && dRight) dir = DualShock4DPadDirection.Northeast;
+                else if (dUp && dLeft) dir = DualShock4DPadDirection.Northwest;
+                else if (dDown && dRight) dir = DualShock4DPadDirection.Southeast;
+                else if (dDown && dLeft) dir = DualShock4DPadDirection.Southwest;
+                else if (dUp) dir = DualShock4DPadDirection.North;
+                else if (dDown) dir = DualShock4DPadDirection.South;
+                else if (dLeft) dir = DualShock4DPadDirection.West;
+                else if (dRight) dir = DualShock4DPadDirection.East;
+                _ds4Pad.SetDPadDirection(dir);
+
+                _ds4Pad.SetSliderValue(DualShock4Slider.LeftTrigger, s.LT);
+                _ds4Pad.SetSliderValue(DualShock4Slider.RightTrigger, s.RT);
+
+                byte dsLx = (byte)Math.Clamp((s.LX + 32768) / 257, 0, 255);
+                byte dsLy = (byte)Math.Clamp((-s.LY + 32768) / 257, 0, 255);
+                byte dsRx = (byte)Math.Clamp((s.RX + 32768) / 257, 0, 255);
+                byte dsRy = (byte)Math.Clamp((-s.RY + 32768) / 257, 0, 255);
+                _ds4Pad.SetAxisValue(DualShock4Axis.LeftThumbX, dsLx);
+                _ds4Pad.SetAxisValue(DualShock4Axis.LeftThumbY, dsLy);
+                _ds4Pad.SetAxisValue(DualShock4Axis.RightThumbX, dsRx);
+                _ds4Pad.SetAxisValue(DualShock4Axis.RightThumbY, dsRy);
+                _ds4Pad.SubmitReport();
+            }
+            else if (_xboxPad != null)
+            {
+                void Btn(Xbox360Button b, PadTarget t) => _xboxPad.SetButtonState(b, s.Has(t));
+                Btn(Xbox360Button.A, PadTarget.A); Btn(Xbox360Button.B, PadTarget.B);
+                Btn(Xbox360Button.X, PadTarget.X); Btn(Xbox360Button.Y, PadTarget.Y);
+                Btn(Xbox360Button.LeftShoulder, PadTarget.LB); Btn(Xbox360Button.RightShoulder, PadTarget.RB);
+                Btn(Xbox360Button.Back, PadTarget.Back); Btn(Xbox360Button.Start, PadTarget.Start);
+                Btn(Xbox360Button.Guide, PadTarget.Guide);
+                Btn(Xbox360Button.LeftThumb, PadTarget.LS); Btn(Xbox360Button.RightThumb, PadTarget.RS);
+                Btn(Xbox360Button.Up, PadTarget.DUp); Btn(Xbox360Button.Down, PadTarget.DDown);
+                Btn(Xbox360Button.Left, PadTarget.DLeft); Btn(Xbox360Button.Right, PadTarget.DRight);
+                _xboxPad.SetSliderValue(Xbox360Slider.LeftTrigger, s.LT);
+                _xboxPad.SetSliderValue(Xbox360Slider.RightTrigger, s.RT);
+                _xboxPad.SetAxisValue(Xbox360Axis.LeftThumbX, s.LX);
+                _xboxPad.SetAxisValue(Xbox360Axis.LeftThumbY, s.LY);
+                _xboxPad.SetAxisValue(Xbox360Axis.RightThumbX, s.RX);
+                _xboxPad.SetAxisValue(Xbox360Axis.RightThumbY, s.RY);
+                _xboxPad.SubmitReport();
+            }
         }
         catch { }
     }

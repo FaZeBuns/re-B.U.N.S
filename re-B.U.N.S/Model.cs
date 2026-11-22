@@ -54,6 +54,141 @@ public enum SchematicHoldView
     HoldOnly = 2
 }
 
+public enum ControllerType
+{
+    Xbox = 0,
+    PlayStation = 1
+}
+
+public static class ControllerNames
+{
+    public static string ButtonName(PadTarget target, ControllerType type) => type switch
+    {
+        ControllerType.PlayStation => target switch
+        {
+            PadTarget.A => "✕ Cross",
+            PadTarget.B => "○ Circle",
+            PadTarget.X => "□ Square",
+            PadTarget.Y => "△ Triangle",
+            PadTarget.LB => "L1",
+            PadTarget.RB => "R1",
+            PadTarget.LT => "L2",
+            PadTarget.RT => "R2",
+            PadTarget.LS => "L3",
+            PadTarget.RS => "R3",
+            PadTarget.Back => "Share / Touchpad",
+            PadTarget.Start => "Options",
+            PadTarget.Guide => "PS Button",
+            PadTarget.DUp => "D-Pad ↑",
+            PadTarget.DDown => "D-Pad ↓",
+            PadTarget.DLeft => "D-Pad ←",
+            PadTarget.DRight => "D-Pad →",
+            PadTarget.LStickUp => "Left Stick ↑",
+            PadTarget.LStickDown => "Left Stick ↓",
+            PadTarget.LStickLeft => "Left Stick ←",
+            PadTarget.LStickRight => "Left Stick →",
+            PadTarget.RStickUp => "Right Stick ↑",
+            PadTarget.RStickDown => "Right Stick ↓",
+            PadTarget.RStickLeft => "Right Stick ←",
+            PadTarget.RStickRight => "Right Stick →",
+            _ => target.ToString()
+        },
+        _ => target switch
+        {
+            PadTarget.A => "A",
+            PadTarget.B => "B",
+            PadTarget.X => "X",
+            PadTarget.Y => "Y",
+            PadTarget.LB => "LB",
+            PadTarget.RB => "RB",
+            PadTarget.LT => "LT",
+            PadTarget.RT => "RT",
+            PadTarget.LS => "L3",
+            PadTarget.RS => "R3",
+            PadTarget.Back => "Back / View",
+            PadTarget.Start => "Start / Menu",
+            PadTarget.Guide => "Xbox Guide",
+            PadTarget.DUp => "D-Pad ↑",
+            PadTarget.DDown => "D-Pad ↓",
+            PadTarget.DLeft => "D-Pad ←",
+            PadTarget.DRight => "D-Pad →",
+            PadTarget.LStickUp => "Left Stick ↑",
+            PadTarget.LStickDown => "Left Stick ↓",
+            PadTarget.LStickLeft => "Left Stick ←",
+            PadTarget.LStickRight => "Left Stick →",
+            PadTarget.RStickUp => "Right Stick ↑",
+            PadTarget.RStickDown => "Right Stick ↓",
+            PadTarget.RStickLeft => "Right Stick ←",
+            PadTarget.RStickRight => "Right Stick →",
+            _ => target.ToString()
+        }
+    };
+
+    public static string Glyph(PadTarget target, ControllerType type) => type switch
+    {
+        ControllerType.PlayStation => target switch
+        {
+            PadTarget.A => "✕",
+            PadTarget.B => "○",
+            PadTarget.X => "□",
+            PadTarget.Y => "△",
+            PadTarget.LB => "L1",
+            PadTarget.RB => "R1",
+            PadTarget.LT => "L2",
+            PadTarget.RT => "R2",
+            PadTarget.LS => "L3",
+            PadTarget.RS => "R3",
+            PadTarget.Back => "SHARE",
+            PadTarget.Start => "OPT",
+            PadTarget.Guide => "PS",
+            PadTarget.DUp => "✚↑",
+            PadTarget.DDown => "✚↓",
+            PadTarget.DLeft => "✚←",
+            PadTarget.DRight => "✚→",
+            PadTarget.LStickUp or PadTarget.LStickDown or PadTarget.LStickLeft or PadTarget.LStickRight => "L",
+            PadTarget.RStickUp or PadTarget.RStickDown or PadTarget.RStickLeft or PadTarget.RStickRight => "R",
+            _ => target.ToString()
+        },
+        _ => target switch
+        {
+            PadTarget.A => "A",
+            PadTarget.B => "B",
+            PadTarget.X => "X",
+            PadTarget.Y => "Y",
+            PadTarget.LB => "LB",
+            PadTarget.RB => "RB",
+            PadTarget.LT => "LT",
+            PadTarget.RT => "RT",
+            PadTarget.LS => "L3",
+            PadTarget.RS => "R3",
+            PadTarget.Back => "⧉",
+            PadTarget.Start => "≡",
+            PadTarget.Guide => "❖",
+            PadTarget.DUp => "✚↑",
+            PadTarget.DDown => "✚↓",
+            PadTarget.DLeft => "✚←",
+            PadTarget.DRight => "✚→",
+            PadTarget.LStickUp or PadTarget.LStickDown or PadTarget.LStickLeft or PadTarget.LStickRight => "L",
+            PadTarget.RStickUp or PadTarget.RStickDown or PadTarget.RStickLeft or PadTarget.RStickRight => "R",
+            _ => target.ToString()
+        }
+    };
+
+    public static string FormatLabel(string label, ControllerType type)
+    {
+        if (string.IsNullOrEmpty(label) || type != ControllerType.PlayStation) return label;
+        return label
+            .Replace("LB", "L1")
+            .Replace("RB", "R1")
+            .Replace("LT", "L2")
+            .Replace("RT", "R2")
+            .Replace("/ B)", "/ ○)")
+            .Replace("/ A)", "/ ✕)")
+            .Replace("/ X)", "/ □)")
+            .Replace("/ Y)", "/ △)");
+    }
+}
+
 public record CalloutSpec(
     PadTarget Target,
     string ButtonGlyph,
@@ -98,6 +233,7 @@ public class Profile
 {
     public string Name { get; set; } = "New Profile";
     public GtaLayoutId LayoutId { get; set; } = GtaLayoutId.Custom;
+    public ControllerType ControllerType { get; set; } = ControllerType.Xbox;
     public List<string> Processes { get; set; } = new();
     public bool OnlyWhenProcessFocused { get; set; }
     public bool BlockUnmappedKeys { get; set; }

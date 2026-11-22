@@ -4,7 +4,7 @@
 
 <h1 align="center">re-B.U.N.S</h1>
 <p align="center">
-  <strong>Native Windows &amp; macOS Keyboard &amp; Mouse → Xbox Controller Remapper for GTA 6</strong>
+  <strong>Native Windows &amp; macOS Keyboard &amp; Mouse → Xbox &amp; PlayStation Controller Remapper for GTA 6</strong>
 </p>
 
 <p align="center">
@@ -31,7 +31,7 @@
 
 ---
 
-**re-B.U.N.S** is a high-performance, native (C# / .NET 8, zero Electron bloat) keyboard and mouse to virtual Xbox 360 controller remapper designed specifically for **GTA 6**. Available natively for both **Windows 10/11** and **macOS** (Apple Silicon M-series & Intel).
+**re-B.U.N.S** is a high-performance, native (C# / .NET 8, zero Electron bloat) keyboard and mouse to virtual Xbox 360 & DualShock 4 PlayStation controller remapper designed specifically for **GTA 6**. Available natively for both **Windows 10/11** and **macOS** (Apple Silicon M-series & Intel).
 
 ---
 
@@ -40,13 +40,13 @@
 ### 🪟 Windows Setup (3 Steps)
 1. Download **[`re-BUNS.exe`](https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.4-windows)** (via the Windows button above).
 2. Double-click **`re-BUNS.exe`** (single standalone file — if ViGEmBus driver is needed, it installs automatically with 1 click).
-3. Choose your GTA 6 Control Scheme preset and click **`▶ START VIRTUAL PAD`**.
+3. Choose your GTA 6 Control Scheme preset, switch layout between **Xbox** and **PlayStation** anytime, and click **`▶ START VIRTUAL PAD`**.
 
 ### 🍏 macOS Setup (3 Steps)
 1. Download **[`re-B.U.N.S-macOS.zip`](https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.4-mac)** (via the macOS button above).
 2. Extract the zip and drag **`re-B.U.N.S.app`** into your **`/Applications`** folder.
 3. Open **System Settings → Privacy & Security → Accessibility** and enable **`re-B.U.N.S`**.
-4. Click **`▶ START VIRTUAL PAD`**, then launch your game or click **`🌐 Launch Xbox Cloud`**!
+4. Click **`▶ START VIRTUAL PAD`**, then launch your game or click **`🌐 Launch Cloud`**!
 
 ---
 
@@ -54,14 +54,18 @@
 
 re-B.U.N.S features a built-in graphical **Web Gamepad Emulator & Tester**:
 - Accessible at **`http://127.0.0.1:27654/`** while re-B.U.N.S is running.
-- Visual Xbox 360 controller schematic with responsive analog sticks, triggers (0–255), and glowing button indicators.
-- Live W3C Gamepad API telemetry validating instant compatibility with **Xbox Cloud Gaming (`play.xbox.com`)**, **GeForce NOW**, and browser-based emulators.
+- Visual Xbox 360 & DualShock 4 controller schematic with responsive analog sticks, triggers (0–255), and glowing button indicators.
+- Live W3C Gamepad API telemetry validating instant compatibility with **Xbox Cloud Gaming (`play.xbox.com`)**, **GeForce NOW**, **PlayStation Remote Play**, and browser-based emulators.
 - Interactive in-browser keyboard & mouse test sandbox to practice bindings before jumping into the game.
 
 ---
 
 ## ✨ Features
 
+- **Dual Xbox 360 & PlayStation (DualShock 4) Support**:
+  - Switch seamlessly between **Xbox** and **PlayStation** controller layouts with 1 click.
+  - Windows: Creates a native **Xbox 360** or **Sony DualShock 4** virtual device via ViGEmBus.
+  - UI dynamically updates all GTA 6 schematic prompts and glyphs (`A/B/X/Y/LB/RB` ↔ `✕/○/□/△/L1/R1/L2/R2`).
 - **Cross-Platform Native Parity**:
   - **Windows**: Low-level kernel driver integration via ViGEmBus for 100% native XInput gamepad emulation in all Windows games and apps.
   - **macOS**: High-speed low-level `CGEventTap` input hooks with zero-latency local W3C Gamepad HTTP bridge (`http://127.0.0.1:27654/pad`) and automatic browser extension injection.

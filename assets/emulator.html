@@ -229,6 +229,24 @@
     box-shadow: 0 4px 12px rgba(61, 220, 151, 0.35);
   }
 
+  .btn-toggle {
+    background: #2b123d;
+    border: 1px solid #753592;
+    color: var(--text-dim);
+    font-weight: 700;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .btn-toggle.active {
+    background: #fff;
+    color: #1a0c24;
+    border-color: #fff;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
+  }
+
   pre.json-box {
     background: #14051d;
     border: 1px solid #441c54;
@@ -261,8 +279,11 @@
   <!-- Left Side: Interactive Virtual Controller Graphic -->
   <div class="card">
     <div class="card-title">
-      <span>🎮 VIRTUAL XBOX 360 CONTROLLER SCHEMATIC</span>
-      <span style="font-size: 11px; font-weight: normal; color: var(--text-dim);">Live 1000 Hz Telemetry</span>
+      <span id="card-schematic-title">🎮 VIRTUAL XBOX 360 CONTROLLER SCHEMATIC</span>
+      <div class="pad-mode-toggle" style="display:inline-flex; gap:6px; margin-left: auto;">
+        <button id="toggle-xbox" class="btn-toggle active" onclick="setControllerMode('xbox')">🎮 Xbox</button>
+        <button id="toggle-ps" class="btn-toggle" onclick="setControllerMode('ps')">🎮 PlayStation</button>
+      </div>
     </div>
 
     <div class="controller-container">
@@ -273,17 +294,17 @@
 
         <!-- Bumpers (LB & RB) -->
         <rect id="btn-lb" class="btn-elem" x="130" y="45" width="100" height="28" rx="8" fill="#3c1852" stroke="#8743a6" stroke-width="2"/>
-        <text x="180" y="64" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">LB</text>
+        <text id="text-btn-lb" x="180" y="64" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">LB</text>
 
         <rect id="btn-rb" class="btn-elem" x="370" y="45" width="100" height="28" rx="8" fill="#3c1852" stroke="#8743a6" stroke-width="2"/>
-        <text x="420" y="64" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">RB</text>
+        <text id="text-btn-rb" x="420" y="64" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">RB</text>
 
         <!-- Triggers Visual Badges (LT & RT) -->
         <rect id="btn-lt" class="btn-elem" x="80" y="25" width="80" height="20" rx="6" fill="#331446" stroke="#70368b" stroke-width="2"/>
-        <text x="120" y="39" fill="#00f0ff" font-size="11" font-weight="bold" text-anchor="middle">LT [Aim]</text>
+        <text id="text-btn-lt" x="120" y="39" fill="#00f0ff" font-size="11" font-weight="bold" text-anchor="middle">LT [Aim]</text>
 
         <rect id="btn-rt" class="btn-elem" x="440" y="25" width="80" height="20" rx="6" fill="#331446" stroke="#70368b" stroke-width="2"/>
-        <text x="480" y="39" fill="#ff2a85" font-size="11" font-weight="bold" text-anchor="middle">RT [Shoot]</text>
+        <text id="text-btn-rt" x="480" y="39" fill="#ff2a85" font-size="11" font-weight="bold" text-anchor="middle">RT [Shoot]</text>
 
         <!-- Left Analog Stick (LS) -->
         <g id="ls-group">
@@ -319,23 +340,23 @@
         <!-- Face Buttons (A, B, X, Y) -->
         <!-- Y (Top, Yellow) -->
         <circle id="btn-y" class="btn-elem" cx="440" cy="115" r="15" fill="#382d10" stroke="#ffd000" stroke-width="2"/>
-        <text x="440" y="120" fill="#ffd000" font-size="13" font-weight="900" text-anchor="middle">Y</text>
+        <text id="text-btn-y" x="440" y="120" fill="#ffd000" font-size="13" font-weight="900" text-anchor="middle">Y</text>
         <!-- X (Left, Blue) -->
         <circle id="btn-x" class="btn-elem" cx="405" cy="150" r="15" fill="#102538" stroke="#00b4d8" stroke-width="2"/>
-        <text x="405" y="155" fill="#00b4d8" font-size="13" font-weight="900" text-anchor="middle">X</text>
+        <text id="text-btn-x" x="405" y="155" fill="#00b4d8" font-size="13" font-weight="900" text-anchor="middle">X</text>
         <!-- B (Right, Red) -->
         <circle id="btn-b" class="btn-elem" cx="475" cy="150" r="15" fill="#381515" stroke="#ef233c" stroke-width="2"/>
-        <text x="475" y="155" fill="#ef233c" font-size="13" font-weight="900" text-anchor="middle">B</text>
+        <text id="text-btn-b" x="475" y="155" fill="#ef233c" font-size="13" font-weight="900" text-anchor="middle">B</text>
         <!-- A (Bottom, Green) -->
         <circle id="btn-a" class="btn-elem" cx="440" cy="185" r="15" fill="#10381f" stroke="#3ddc97" stroke-width="2"/>
-        <text x="440" y="190" fill="#3ddc97" font-size="13" font-weight="900" text-anchor="middle">A</text>
+        <text id="text-btn-a" x="440" y="190" fill="#3ddc97" font-size="13" font-weight="900" text-anchor="middle">A</text>
 
         <!-- Center Buttons: Back, Start, Guide -->
         <circle id="btn-back" class="btn-elem" cx="265" cy="145" r="8" fill="#351548" stroke="#773595" stroke-width="1.5"/>
-        <text x="265" y="132" fill="#d8c2e4" font-size="9" text-anchor="middle">Back</text>
+        <text id="text-btn-back" x="265" y="132" fill="#d8c2e4" font-size="9" text-anchor="middle">Back</text>
 
         <circle id="btn-start" class="btn-elem" cx="335" cy="145" r="8" fill="#351548" stroke="#773595" stroke-width="1.5"/>
-        <text x="335" y="132" fill="#d8c2e4" font-size="9" text-anchor="middle">Start</text>
+        <text id="text-btn-start" x="335" y="132" fill="#d8c2e4" font-size="9" text-anchor="middle">Start</text>
 
         <circle id="btn-guide" class="btn-elem" cx="300" cy="115" r="17" fill="#1b0826" stroke="#00f0ff" stroke-width="2.5"/>
         <path d="M 292 108 L 308 122 M 308 108 L 292 122" stroke="#00f0ff" stroke-width="2.5" stroke-linecap="round"/>
@@ -344,11 +365,11 @@
       <!-- Trigger Analog Gauges -->
       <div class="triggers-bar-row">
         <div class="trigger-box">
-          <div class="trigger-hdr"><span>LT (Left Trigger · Aim)</span><span id="lt-val-text">0 / 255 (0%)</span></div>
+          <div class="trigger-hdr"><span id="lt-title">LT (Left Trigger · Aim)</span><span id="lt-val-text">0 / 255 (0%)</span></div>
           <div class="trigger-meter"><div class="trigger-fill" id="lt-fill"></div></div>
         </div>
         <div class="trigger-box">
-          <div class="trigger-hdr"><span>RT (Right Trigger · Shoot)</span><span id="rt-val-text">0 / 255 (0%)</span></div>
+          <div class="trigger-hdr"><span id="rt-title">RT (Right Trigger · Shoot)</span><span id="rt-val-text">0 / 255 (0%)</span></div>
           <div class="trigger-meter"><div class="trigger-fill" id="rt-fill"></div></div>
         </div>
       </div>
@@ -470,7 +491,34 @@
     elements.btnGuide
   ];
 
-  const btnNames = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'Back', 'Start', 'LS-Click', 'RS-Click', 'D-Up', 'D-Down', 'D-Left', 'D-Right', 'Guide'];
+  const xboxNames = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'Back', 'Start', 'LS', 'RS', 'D-Up', 'D-Down', 'D-Left', 'D-Right', 'Guide'];
+  const psNames = ['✕ Cross', '○ Circle', '□ Square', '△ Triangle', 'L1', 'R1', 'L2', 'R2', 'Share', 'Options', 'L3', 'R3', 'D-Up', 'D-Down', 'D-Left', 'D-Right', 'PS'];
+  let currentControllerMode = 'xbox';
+
+  window.setControllerMode = function(mode) {
+    currentControllerMode = mode;
+    document.getElementById('toggle-xbox').classList.toggle('active', mode === 'xbox');
+    document.getElementById('toggle-ps').classList.toggle('active', mode === 'ps');
+    
+    // Update SVG Text labels
+    document.getElementById('text-btn-y').textContent = mode === 'ps' ? '△' : 'Y';
+    document.getElementById('text-btn-b').textContent = mode === 'ps' ? '○' : 'B';
+    document.getElementById('text-btn-a').textContent = mode === 'ps' ? '✕' : 'A';
+    document.getElementById('text-btn-x').textContent = mode === 'ps' ? '□' : 'X';
+    document.getElementById('text-btn-lb').textContent = mode === 'ps' ? 'L1' : 'LB';
+    document.getElementById('text-btn-rb').textContent = mode === 'ps' ? 'R1' : 'RB';
+    document.getElementById('text-btn-lt').textContent = mode === 'ps' ? 'L2 [Aim]' : 'LT [Aim]';
+    document.getElementById('text-btn-rt').textContent = mode === 'ps' ? 'R2 [Shoot]' : 'RT [Shoot]';
+    document.getElementById('text-btn-back').textContent = mode === 'ps' ? 'Share' : 'Back';
+    document.getElementById('text-btn-start').textContent = mode === 'ps' ? 'Opt' : 'Start';
+    document.getElementById('ls-label').textContent = mode === 'ps' ? 'L3' : 'LS';
+    document.getElementById('rs-label').textContent = mode === 'ps' ? 'R3' : 'RS';
+    
+    // Update Trigger Gauges text
+    document.getElementById('lt-title').textContent = mode === 'ps' ? 'L2 (Left Trigger · Aim)' : 'LT (Left Trigger · Aim)';
+    document.getElementById('rt-title').textContent = mode === 'ps' ? 'R2 (Right Trigger · Shoot)' : 'RT (Right Trigger · Shoot)';
+    document.getElementById('card-schematic-title').textContent = mode === 'ps' ? '🎮 VIRTUAL PLAYSTATION (DUALSHOCK 4) SCHEMATIC' : '🎮 VIRTUAL XBOX 360 CONTROLLER SCHEMATIC';
+  };
 
   let simulatedState = {
     axes: [0, 0, 0, 0],
@@ -517,7 +565,7 @@
       if (el) {
         if (isDown) {
           el.classList.add('btn-active');
-          pressedNames.push(btnNames[i]);
+          pressedNames.push((currentControllerMode === 'ps' ? psNames : xboxNames)[i]);
         } else {
           el.classList.remove('btn-active');
         }

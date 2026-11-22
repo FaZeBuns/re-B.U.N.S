@@ -160,6 +160,10 @@ public class MacMainWindow : Window
     Profile _cur;
     PadTarget _sel = PadTarget.DUp;
     SchematicHoldView _holdView = SchematicHoldView.TapAndHold;
+    ControllerType _controllerType = ControllerType.Xbox;
+
+    Button _xboxToggleBtn;
+    Button _psToggleBtn;
 
     readonly TextBlock _schemeNameText = new() { FontSize = 17, FontWeight = FontWeight.ExtraBold, Foreground = new SolidColorBrush(Color.Parse("#1A0C24")), VerticalAlignment = VerticalAlignment.Center };
     readonly TextBlock _schemeIdxText = new() { FontSize = 15, FontWeight = FontWeight.ExtraBold, Foreground = new SolidColorBrush(Color.Parse("#1A0C24")), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) };
@@ -205,6 +209,7 @@ public class MacMainWindow : Window
         int idx = _profiles.FindIndex(p => p.Name == MacAppSettings.Instance.LastSelectedProfile);
         if (idx < 0) idx = _profiles.FindIndex(p => p.LayoutId == GtaLayoutId.ReBuns);
         _cur = _profiles[Math.Max(0, idx)];
+        _controllerType = _cur.ControllerType;
         _engine.SetProfile(_cur);
 
         var rootGrid = new Grid();
@@ -219,7 +224,17 @@ public class MacMainWindow : Window
         var rightHdr = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
         DockPanel.SetDock(rightHdr, Dock.Right);
 
-        var cloudBtn = MakeGtaButton("🌐 Launch Xbox Cloud", false);
+        // Controller Layout Toggle (Xbox / PlayStation)
+        _xboxToggleBtn = MakeGtaButton("🎮 Xbox", _controllerType == ControllerType.Xbox);
+        _psToggleBtn = MakeGtaButton("🎮 PlayStation", _controllerType == ControllerType.PlayStation);
+        _xboxToggleBtn.Click += (_, _) => SetMacControllerType(ControllerType.Xbox);
+        _psToggleBtn.Click += (_, _) => SetMacControllerType(ControllerType.PlayStation);
+        var padToggleGroup = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3 };
+        padToggleGroup.Children.Add(_xboxToggleBtn);
+        padToggleGroup.Children.Add(_psToggleBtn);
+        rightHdr.Children.Add(padToggleGroup);
+
+        var cloudBtn = MakeGtaButton("🌐 Launch Cloud", false);
         cloudBtn.Click += (_, _) => MacEngine.LaunchCloudGamingBrowser();
         rightHdr.Children.Add(cloudBtn);
 
@@ -641,6 +656,25 @@ public class MacMainWindow : Window
         RefreshSchematic();
     }
 
+    void SetMacControllerType(ControllerType type)
+    {
+        _controllerType = type;
+        if (_cur != null)
+        {
+            _cur.ControllerType = type;
+            _cur.Save();
+        }
+        if (_xboxToggleBtn != null && _psToggleBtn != null)
+        {
+            bool isXbox = type == ControllerType.Xbox;
+            _xboxToggleBtn.Background = isXbox ? Brushes.White : new SolidColorBrush(Color.Parse("#3D1F4C"));
+            _xboxToggleBtn.Foreground = isXbox ? new SolidColorBrush(Color.Parse("#1A0C24")) : Brushes.White;
+            _psToggleBtn.Background = !isXbox ? Brushes.White : new SolidColorBrush(Color.Parse("#3D1F4C"));
+            _psToggleBtn.Foreground = !isXbox ? new SolidColorBrush(Color.Parse("#1A0C24")) : Brushes.White;
+        }
+        RefreshSchematic();
+    }
+
     void RefreshSchematic()
     {
         var curId = _cur?.LayoutId ?? GtaLayoutId.ReBuns;
@@ -652,8 +686,8 @@ public class MacMainWindow : Window
         {
             var spec = GetSpec(ui);
             if (spec == null) continue;
-            ui.GlyphTxt.Text = spec.ButtonGlyph;
-            ui.ActionTxt.Text = spec.HoldLabel == null
+            ui.GlyphTxt.Text = ControllerNames.Glyph(spec.Target, _controllerType);
+            string actionText = spec.HoldLabel == null
                 ? spec.TapLabel
                 : _holdView switch
                 {
@@ -661,6 +695,7 @@ public class MacMainWindow : Window
                     SchematicHoldView.HoldOnly => $"◎ {spec.HoldLabel}",
                     _ => $"{spec.TapLabel} / ◎ {spec.HoldLabel}"
                 };
+            ui.ActionTxt.Text = ControllerNames.FormatLabel(actionText, _controllerType);
 
             var keys = _cur.Bindings.Where(b => b.Target == spec.Target).Select(b => InputNames.Pretty(b.Input)).ToList();
             if (spec.Target == PadTarget.LStickUp && _cur.LayoutId != GtaLayoutId.LeftHanded) ui.KeyTxt.Text = "W A S D";
@@ -674,7 +709,10 @@ public class MacMainWindow : Window
 
         _selKeys.Children.Clear();
         var matchSpec = info.Callouts.FirstOrDefault(c => c.Target == _sel);
-        _selName.Text = matchSpec != null ? $"{matchSpec.TapLabel} [{matchSpec.ButtonGlyph}]" : _sel.ToString();
+        var glyph = ControllerNames.Glyph(_sel, _controllerType);
+        _selName.Text = matchSpec != null
+            ? ControllerNames.FormatLabel(matchSpec.HoldLabel != null ? $"{matchSpec.TapLabel} / ◎ {matchSpec.HoldLabel} [{glyph}]" : $"{matchSpec.TapLabel} [{glyph}]", _controllerType)
+            : $"Controller: {ControllerNames.ButtonName(_sel, _controllerType)}";
         foreach (var b in _cur.Bindings.Where(b => b.Target == _sel).ToList())
         {
             var row = new DockPanel();
