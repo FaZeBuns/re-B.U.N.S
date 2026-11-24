@@ -14,8 +14,10 @@ public partial class App : System.Windows.Application
         Directory.CreateDirectory(Path.GetDirectoryName(Log)!);
         DispatcherUnhandledException += (_, a) =>
         {
-            File.AppendAllText(Log, $"{DateTime.Now}: {a.Exception}\n");
-            MessageBox.Show(a.Exception.Message, "re-B.U.N.S Error");
+            var baseEx = a.Exception.GetBaseException();
+            File.AppendAllText(Log, $"{DateTime.Now}: {a.Exception}\nBase Exception: {baseEx}\n\n");
+            string userMsg = $"re-B.U.N.S encountered an unexpected error:\n\n{baseEx.Message}\n\nDetails saved to:\n{Log}";
+            MessageBox.Show(userMsg, "re-B.U.N.S Error", MessageBoxButton.OK, MessageBoxImage.Error);
             a.Handled = true;
         };
         AppDomain.CurrentDomain.UnhandledException += (_, a) =>

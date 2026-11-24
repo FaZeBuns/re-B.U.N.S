@@ -46,7 +46,7 @@ public partial class MainWindow : Window
     readonly List<KbCap> _kbCaps = new();
 
     System.Windows.Forms.NotifyIcon _tray;
-    readonly MediaPlayer _introPlayer = new();
+    MediaPlayer _introPlayer;
     static readonly Brush DarkBtnFill = new SolidColorBrush(Color.FromRgb(0x22, 0x22, 0x2B));
     static readonly Brush DarkInk = new SolidColorBrush(Color.FromRgb(0x1A, 0x0C, 0x24));
     static readonly Brush WhiteGrad = new LinearGradientBrush(Colors.White, Color.FromRgb(0xDF, 0xCE, 0xE8), 0);
@@ -128,6 +128,7 @@ public partial class MainWindow : Window
             }
             if (File.Exists(mp3Path))
             {
+                _introPlayer ??= new MediaPlayer();
                 _introPlayer.Open(new Uri(mp3Path, UriKind.Absolute));
                 _introPlayer.Volume = 1.0;
                 _introPlayer.Play();
@@ -1421,14 +1422,43 @@ public partial class MainWindow : Window
         var runningCombo = new ComboBox { Width = 220, HorizontalAlignment = HorizontalAlignment.Right };
         void RefreshRunningProcs()
         {
-            var names = Process.GetProcesses()
-                .Where(pr => pr.MainWindowHandle != IntPtr.Zero && !string.IsNullOrEmpty(pr.ProcessName))
-                .Select(pr => pr.ProcessName + ".exe")
+            var names = new List<string>();
+            try
+            {
+                var procs = Process.GetProcesses();
+                foreach (var pr in procs)
+                {
+                    try
+                    {
+                        if (pr.MainWindowHandle != IntPtr.Zero && !string.IsNullOrEmpty(pr.ProcessName))
+                        {
+                            names.Add(pr.ProcessName + ".exe");
+                        }
+                    }
+                    catch
+                    {
+                        // Some protected processes (anticheats like EAC/Vanguard, system svchost/csrss)
+                        // throw Win32Exception (Access Denied) or InvalidOperationException (Process Exited)
+                        // when accessing MainWindowHandle. Safely ignore them.
+                    }
+                    finally
+                    {
+                        try { pr.Dispose(); } catch { }
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback if process enumeration as a whole fails
+            }
+
+            var distinctNames = names
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(x => x)
                 .ToList();
-            names.Insert(0, "+ Add running app...");
-            runningCombo.ItemsSource = names;
+
+            distinctNames.Insert(0, "+ Add running app...");
+            runningCombo.ItemsSource = distinctNames;
             runningCombo.SelectedIndex = 0;
         }
         RefreshRunningProcs();
@@ -1715,32 +1745,70 @@ public partial class MainWindow : Window
 
     void SetupTray()
     {
-        _tray = new System.Windows.Forms.NotifyIcon
+        try
         {
-            Icon = System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!) ?? System.Drawing.SystemIcons.Application,
-            Visible = true,
-            Text = "re-B.U.N.S"
-        };
-        _tray.DoubleClick += (_, _) => { Show(); WindowState = WindowState.Normal; Activate(); };
-        var menu = new System.Windows.Forms.ContextMenuStrip();
-        menu.Items.Add("Open re-B.U.N.S", null, (_, _) => { Show(); WindowState = WindowState.Normal; Activate(); });
-        menu.Items.Add("Start / Stop Virtual Controller", null, (_, _) => StartBtn_Click(null, null));
-        menu.Items.Add("Check for GitHub Updates", null, async (_, _) => await CheckForUpdatesAsync(false));
-        menu.Items.Add("-");
-        menu.Items.Add("Exit", null, (_, _) => Close());
-        _tray.ContextMenuStrip = menu;
-        StateChanged += (_, _) => { if (WindowState == WindowState.Minimized) Hide(); };
+            System.Drawing.Icon appIcon = null;
+            try
+            {
+                var iconUri = new Uri("pack://application:,,,/re-B.U.N.S.ico", UriKind.Absolute);
+                var streamInfo = Application.GetResourceStream(iconUri);
+                if (streamInfo?.Stream != null)
+                {
+                    using (streamInfo.Stream)
+                    {
+                        appIcon = new System.Drawing.Icon(streamInfo.Stream);
+                    }
+                }
+            }
+            catch { }
+
+            if (appIcon == null)
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(Environment.ProcessPath))
+                        appIcon = System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath);
+                }
+                catch { }
+            }
+
+            appIcon ??= System.Drawing.SystemIcons.Application;
+
+            _tray = new System.Windows.Forms.NotifyIcon
+            {
+                Icon = appIcon,
+                Visible = true,
+                Text = "re-B.U.N.S"
+            };
+            _tray.DoubleClick += (_, _) => { Show(); WindowState = WindowState.Normal; Activate(); };
+            var menu = new System.Windows.Forms.ContextMenuStrip();
+            menu.Items.Add("Open re-B.U.N.S", null, (_, _) => { Show(); WindowState = WindowState.Normal; Activate(); });
+            menu.Items.Add("Start / Stop Virtual Controller", null, (_, _) => StartBtn_Click(null, null));
+            menu.Items.Add("Check for GitHub Updates", null, async (_, _) => await CheckForUpdatesAsync(false));
+            menu.Items.Add("-");
+            menu.Items.Add("Exit", null, (_, _) => Close());
+            _tray.ContextMenuStrip = menu;
+            StateChanged += (_, _) => { if (WindowState == WindowState.Minimized) Hide(); };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to setup system tray: {ex.Message}");
+        }
     }
 
     protected override void OnClosed(EventArgs e)
     {
         SyncProfile();
         _engine.Dispose();
-        if (_tray != null)
+        try
         {
-            _tray.Visible = false;
-            _tray.Dispose();
+            if (_tray != null)
+            {
+                _tray.Visible = false;
+                _tray.Dispose();
+            }
         }
+        catch { }
         base.OnClosed(e);
     }
 }
