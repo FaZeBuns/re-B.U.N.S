@@ -12,9 +12,9 @@
     <AssemblyName>re-BUNS</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>ReBuns</RootNamespace>
-    <Version>1.6.4</Version>
-    <AssemblyVersion>1.6.4.0</AssemblyVersion>
-    <FileVersion>1.6.4.0</FileVersion>
+    <Version>1.6.5</Version>
+    <AssemblyVersion>1.6.5.0</AssemblyVersion>
+    <FileVersion>1.6.5.0</FileVersion>
     <Product>re-B.U.N.S</Product>
     <Company>FaZeBuns</Company>
     <Description>re-B.U.N.S — Native Windows Keyboard &amp; Mouse to Xbox Controller Remapper for GTA 6</Description>
