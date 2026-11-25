@@ -1,9 +1,38 @@
+# Build outputs
 bin/
 obj/
 dist/
+publish-*/
+
+# Visual Studio & IDE files
 .vs/
 *.user
 *.suo
+*.userosscache
+*.sln.docstates
+.idea/
+.vscode/
+
+# Debugging symbols & logs
 *.pdb
+*.log
+crash.log
+
+# Archives & installers
+*.zip
+*.dmg
+*.pkg
 assets/ViGEmBus_Setup.exe
+
+# macOS app bundles & artifacts
+re-B.U.N.S.app/
+re-B.U.N.S-Intel.app/
+re-B.U.N.S.iconset/
+dmg-arm64/
+dmg-intel/
+.DS_Store
+
+# Scripts & environment
 publish-release.ps1
+*.env
+*.env.local
