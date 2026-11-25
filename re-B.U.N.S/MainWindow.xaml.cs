@@ -513,39 +513,55 @@ public partial class MainWindow : Window
         _calloutRows.Clear();
 
         // 1. Subtle Vice City Palm Tree Silhouettes in Bottom-Right (matching GTA 6 screenshots!)
-        DrawPalmSilhouette(720, 555, 360, -18);
-        DrawPalmSilhouette(855, 560, 310, 8);
-        DrawPalmSilhouette(975, 560, 345, -10);
+        try
+        {
+            DrawPalmSilhouette(720, 555, 360, -18);
+            DrawPalmSilhouette(855, 560, 310, 8);
+            DrawPalmSilhouette(975, 560, 345, -10);
+        }
+        catch { }
 
         void DrawPalmSilhouette(double baseX, double baseY, double height, double tiltX)
         {
-            var palmBrush = new SolidColorBrush(Color.FromArgb(48, 0x10, 0x05, 0x18));
-            double topX = baseX + tiltX, topY = baseY - height;
-            var trunk = new System.Windows.Shapes.Path
+            try
             {
-                Stroke = palmBrush,
-                StrokeThickness = 11,
-                Data = Geometry.Parse($"M {baseX},{baseY} Q {baseX + tiltX * 0.4},{baseY - height * 0.5} {topX},{topY}")
-            };
-            Pad.Children.Add(trunk);
-            string[] fronds =
-            {
-                $"M {topX},{topY} Q {topX - 65},{topY - 30} {topX - 115},{topY + 25}",
-                $"M {topX},{topY} Q {topX - 55},{topY - 5}  {topX - 95},{topY + 60}",
-                $"M {topX},{topY} Q {topX - 35},{topY - 55} {topX - 75},{topY - 25}",
-                $"M {topX},{topY} Q {topX + 45},{topY - 50} {topX + 90},{topY - 15}",
-                $"M {topX},{topY} Q {topX + 65},{topY - 20} {topX + 115},{topY + 30}",
-                $"M {topX},{topY} Q {topX + 50},{topY + 5}  {topX + 85},{topY + 65}",
-            };
-            foreach (var f in fronds)
-            {
-                Pad.Children.Add(new System.Windows.Shapes.Path
+                var palmBrush = new SolidColorBrush(Color.FromArgb(48, 0x10, 0x05, 0x18));
+                double topX = baseX + tiltX, topY = baseY - height;
+                double cpX = baseX + tiltX * 0.4;
+                double cpY = baseY - height * 0.5;
+
+                // Use Invariant culture so numbers always format with '.' instead of ',' regardless of Windows regional settings
+                string trunkPath = FormattableString.Invariant($"M {baseX:0.#},{baseY:0.#} Q {cpX:0.#},{cpY:0.#} {topX:0.#},{topY:0.#}");
+                var trunk = new System.Windows.Shapes.Path
                 {
                     Stroke = palmBrush,
-                    StrokeThickness = 7,
-                    StrokeEndLineCap = PenLineCap.Round,
-                    Data = Geometry.Parse(f)
-                });
+                    StrokeThickness = 11,
+                    Data = Geometry.Parse(trunkPath)
+                };
+                Pad.Children.Add(trunk);
+                string[] fronds =
+                {
+                    FormattableString.Invariant($"M {topX:0.#},{topY:0.#} Q {topX - 65:0.#},{topY - 30:0.#} {topX - 115:0.#},{topY + 25:0.#}"),
+                    FormattableString.Invariant($"M {topX:0.#},{topY:0.#} Q {topX - 55:0.#},{topY - 5:0.#}  {topX - 95:0.#},{topY + 60:0.#}"),
+                    FormattableString.Invariant($"M {topX:0.#},{topY:0.#} Q {topX - 35:0.#},{topY - 55:0.#} {topX - 75:0.#},{topY - 25:0.#}"),
+                    FormattableString.Invariant($"M {topX:0.#},{topY:0.#} Q {topX + 45:0.#},{topY - 50:0.#} {topX + 90:0.#},{topY - 15:0.#}"),
+                    FormattableString.Invariant($"M {topX:0.#},{topY:0.#} Q {topX + 65:0.#},{topY - 20:0.#} {topX + 115:0.#},{topY + 30:0.#}"),
+                    FormattableString.Invariant($"M {topX:0.#},{topY:0.#} Q {topX + 50:0.#},{topY + 5:0.#}  {topX + 85:0.#},{topY + 65:0.#}"),
+                };
+                foreach (var f in fronds)
+                {
+                    Pad.Children.Add(new System.Windows.Shapes.Path
+                    {
+                        Stroke = palmBrush,
+                        StrokeThickness = 7,
+                        StrokeEndLineCap = PenLineCap.Round,
+                        Data = Geometry.Parse(f)
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to draw decorative palm: {ex.Message}");
             }
         }
 

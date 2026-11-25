@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Threading;
 using System.Windows;
 using Microsoft.Win32;
 
@@ -11,6 +13,13 @@ public partial class App : System.Windows.Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // Enforce InvariantCulture across all threads so floating-point coordinates and geometries (like WPF paths)
+        // never fail on European or international Windows locales where ',' is the decimal mark.
+        CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+        CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+        Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+        Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
+
         Directory.CreateDirectory(Path.GetDirectoryName(Log)!);
         DispatcherUnhandledException += (_, a) =>
         {
