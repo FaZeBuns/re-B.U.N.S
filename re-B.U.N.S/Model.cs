@@ -243,6 +243,10 @@ public class Profile
     public MouseSettings Mouse { get; set; } = new();
     public List<Binding> Bindings { get; set; } = new();
 
+    /// <summary>Bumped whenever the built-in preset bindings change so saved copies get refreshed.</summary>
+    public int PresetVersion { get; set; }
+    public const int CurrentPresetVersion = 2;
+
     static readonly JsonSerializerOptions Json = new()
     {
         WriteIndented = true,
@@ -428,6 +432,16 @@ public class Profile
                     try { File.Delete(f); } catch { }
                     continue;
                 }
+                // Built-in preset saved by an older version: refresh its bindings (keeps the user's
+                // mouse tuning, controller type, processes and options).
+                var builtIn = GtaLayouts.FirstOrDefault(x => x.Id == p.LayoutId);
+                if (builtIn != null && p.PresetVersion < CurrentPresetVersion &&
+                    string.Equals(p.Name, builtIn.ProfileName, StringComparison.OrdinalIgnoreCase))
+                {
+                    p.Bindings = CreateGta6Preset(p.LayoutId).Bindings;
+                    p.PresetVersion = CurrentPresetVersion;
+                    try { p.Save(); } catch { }
+                }
                 list.Add(p);
             }
             catch { }
@@ -459,6 +473,7 @@ public class Profile
         {
             Name = info.ProfileName,
             LayoutId = info.Id,
+            PresetVersion = CurrentPresetVersion,
             Processes = { "Greenlight.exe", "XboxPcApp.exe", "GameBar.exe", "chrome.exe", "msedge.exe", "brave.exe", "GTA6.exe", "PlayGTA6.exe" },
         };
         void B(string k, PadTarget t, string n = "", KeyActivator act = KeyActivator.Regular, BindMode mode = BindMode.Hold, string sc = "All") =>
@@ -518,8 +533,9 @@ public class Profile
             B("Space",       PadTarget.RB,          "Handbrake (RB)", sc: "Land / Water Vehicles");
             B("E",           PadTarget.LS,          "Horn / Siren (L3)", sc: "Land / Water Vehicles");
             B("Q",           PadTarget.DLeft,       "Next Radio Station", sc: "Land / Water Vehicles");
-            B("Mouse1",      PadTarget.LB,          "Drive-by Shoot / Weapon (LB)", sc: "Land / Water Vehicles");
-            B("Mouse2",      PadTarget.LT,          "Drive-by Aim (LT)", sc: "Land / Water Vehicles");
+            // LT is the brake in a vehicle, so aiming can't live there (right-click used to brake the car).
+            B("Mouse2",      PadTarget.LB,          "Drive-by Aim (LB)", sc: "Land / Water Vehicles");
+            B("Mouse1",      PadTarget.RB,          "Drive-by Shoot (RB while aiming)", sc: "Land / Water Vehicles");
             B("F",           PadTarget.Y,           "Exit Vehicle (Y)", sc: "Land / Water Vehicles");
             B("C",           PadTarget.RS,          "Look Behind (R3)", sc: "Land / Water Vehicles");
 
@@ -585,6 +601,7 @@ public class Profile
                 B("Mouse1", PadTarget.RT, "SHOOT (RT)");
                 B("Mouse2", PadTarget.LT, "AIM / INTERACT (LT)");
                 B("C", PadTarget.RS, "LOOK BEHIND (R3)");
+                AddVehicle(PadTarget.RT, PadTarget.LT, PadTarget.LStickLeft, PadTarget.LStickRight, PadTarget.RB, PadTarget.LB, PadTarget.LS, PadTarget.RS);
                 break;
 
             case GtaLayoutId.Classic:
@@ -608,6 +625,7 @@ public class Profile
                 B("Mouse1", PadTarget.RT, "SHOOT (RT)");
                 B("Mouse2", PadTarget.LT, "AIM / INTERACT (LT)");
                 B("C", PadTarget.RS, "LOOK BEHIND (R3)");
+                AddVehicle(PadTarget.RT, PadTarget.LT, PadTarget.LStickLeft, PadTarget.LStickRight, PadTarget.RB, PadTarget.LB, PadTarget.LS, PadTarget.RS);
                 break;
 
             case GtaLayoutId.LeftHanded:
@@ -631,8 +649,29 @@ public class Profile
                 B("Mouse1", PadTarget.LT, "SHOOT (LT)");
                 B("Mouse2", PadTarget.RT, "AIM / INTERACT (RT)");
                 B("C", PadTarget.LS, "LOOK BEHIND (L3)");
+                // Left-Handed mirrors triggers, bumpers and sticks.
+                AddVehicle(PadTarget.LT, PadTarget.RT, PadTarget.RStickLeft, PadTarget.RStickRight, PadTarget.LB, PadTarget.RB, PadTarget.RS, PadTarget.LS);
                 break;
         }
         return p;
+
+        // Vehicle scenario (F2). These override the on-foot "All" bindings for the same keys only
+        // while driving, so W/S become gas/brake instead of pushing the stick.
+        void AddVehicle(PadTarget gas, PadTarget brake, PadTarget steerL, PadTarget steerR, PadTarget handbrake, PadTarget aim, PadTarget horn, PadTarget lookBehind)
+        {
+            const string V = "Land / Water Vehicles";
+            string n(PadTarget t) => InputNames.ShortTarget(t);
+            B("W", gas, $"Accelerate ({n(gas)})", sc: V);
+            B("S", brake, $"Brake / Reverse ({n(brake)})", sc: V);
+            B("A", steerL, $"Steer Left ({n(steerL)})", sc: V);
+            B("D", steerR, $"Steer Right ({n(steerR)})", sc: V);
+            B("Space", handbrake, $"Handbrake ({n(handbrake)})", sc: V);
+            B("E", horn, $"Horn ({n(horn)})", sc: V);
+            B("F", PadTarget.Y, "Exit Vehicle (Y)", sc: V);
+            B("C", lookBehind, $"Look Behind ({n(lookBehind)})", sc: V);
+            B("Mouse2", aim, $"Drive-by Aim ({n(aim)})", sc: V);
+            B("Mouse1", handbrake, $"Drive-by Shoot ({n(handbrake)} while aiming)", sc: V);
+            B("Q", PadTarget.DLeft, "Radio Station (D-Left)", sc: V);
+        }
     }
 }

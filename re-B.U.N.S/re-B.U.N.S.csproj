@@ -24,7 +24,7 @@
     <Resource Include="re-B.U.N.S.ico" />
     <Resource Include="Logo.png" />
     <EmbeddedResource Include="intro.mp3" LogicalName="intro.mp3" />
-    <EmbeddedResource Include="..\assets\ViGEmBus_Setup.exe" Link="ViGEmBus_Setup.exe" LogicalName="ViGEmBus_Setup.exe" />
+    <EmbeddedResource Include="..\assets\ViGEmBus_Setup.exe" Link="ViGEmBus_Setup.exe" LogicalName="ViGEmBus_Setup.exe" Condition="Exists('..\assets\ViGEmBus_Setup.exe')" />
     <PackageReference Include="Nefarius.ViGEm.Client" Version="1.21.256" />
   </ItemGroup>
 
