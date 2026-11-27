@@ -21,8 +21,10 @@ public partial class App : System.Windows.Application
         Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 
         Directory.CreateDirectory(Path.GetDirectoryName(Log)!);
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => Native.RestoreSystemCursors();
         DispatcherUnhandledException += (_, a) =>
         {
+            Native.RestoreSystemCursors();
             var baseEx = a.Exception.GetBaseException();
             File.AppendAllText(Log, $"{DateTime.Now}: {a.Exception}\nBase Exception: {baseEx}\n\n");
             string userMsg = $"re-B.U.N.S encountered an unexpected error:\n\n{baseEx.Message}\n\nDetails saved to:\n{Log}";
@@ -30,7 +32,10 @@ public partial class App : System.Windows.Application
             a.Handled = true;
         };
         AppDomain.CurrentDomain.UnhandledException += (_, a) =>
+        {
+            Native.RestoreSystemCursors();
             File.AppendAllText(Log, $"{DateTime.Now}: {a.ExceptionObject}\n");
+        };
 
         if (e.Args.Any(a => a.Equals("--uninstall", StringComparison.OrdinalIgnoreCase)))
         {

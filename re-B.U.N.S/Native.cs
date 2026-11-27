@@ -44,6 +44,76 @@ static class Native
     [DllImport("user32.dll")] public static extern uint MapVirtualKey(uint code, uint type);
     [DllImport("user32.dll", SetLastError = true)] public static extern IntPtr OpenInputDesktop(uint dwFlags, bool fInherit, uint dwDesiredAccess);
     [DllImport("user32.dll", SetLastError = true)] public static extern bool CloseDesktop(IntPtr hDesktop);
+    [DllImport("user32.dll")] public static extern IntPtr CreateCursor(IntPtr hInst, int xHotSpot, int yHotSpot, int nWidth, int nHeight, byte[] pvANDPlane, byte[] pvXORPlane);
+    [DllImport("user32.dll")] public static extern IntPtr CopyIcon(IntPtr hIcon);
+    [DllImport("user32.dll")] public static extern bool DestroyCursor(IntPtr hCursor);
+    [DllImport("user32.dll")] public static extern bool SetSystemCursor(IntPtr hcur, uint id);
+    [DllImport("user32.dll", SetLastError = true)] public static extern bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni);
     [DllImport("winmm.dll")] public static extern uint timeBeginPeriod(uint p);
     [DllImport("winmm.dll")] public static extern uint timeEndPeriod(uint p);
+
+    static readonly object _cursorLock = new();
+    static bool _cursorHidden;
+    static readonly uint[] SystemCursorIds =
+    {
+        32512, // OCR_NORMAL
+        32513, // OCR_IBEAM
+        32514, // OCR_WAIT
+        32515, // OCR_CROSS
+        32516, // OCR_UP
+        32642, // OCR_SIZENWSE
+        32643, // OCR_SIZENESW
+        32644, // OCR_SIZEWE
+        32645, // OCR_SIZENS
+        32646, // OCR_SIZEALL
+        32648, // OCR_NO
+        32649, // OCR_HAND
+        32650, // OCR_APPSTARTING
+    };
+
+    public static void SetSystemCursorHidden(bool hide)
+    {
+        lock (_cursorLock)
+        {
+            if (_cursorHidden == hide) return;
+            try
+            {
+                if (hide)
+                {
+                    // 32x32 completely transparent blank cursor (AND = 0xFF, XOR = 0x00)
+                    byte[] andMask = new byte[128];
+                    Array.Fill(andMask, (byte)0xFF);
+                    byte[] xorMask = new byte[128];
+                    IntPtr blank = CreateCursor(IntPtr.Zero, 0, 0, 32, 32, andMask, xorMask);
+                    if (blank != IntPtr.Zero)
+                    {
+                        foreach (uint id in SystemCursorIds)
+                        {
+                            IntPtr copy = CopyIcon(blank);
+                            if (copy != IntPtr.Zero)
+                                SetSystemCursor(copy, id);
+                        }
+                        DestroyCursor(blank);
+                        _cursorHidden = true;
+                    }
+                }
+                else
+                {
+                    SystemParametersInfo(0x0057 /* SPI_SETCURSORS */, 0, IntPtr.Zero, 0);
+                    _cursorHidden = false;
+                }
+            }
+            catch { }
+        }
+    }
+
+    public static void RestoreSystemCursors()
+    {
+        lock (_cursorLock)
+        {
+            if (!_cursorHidden) return;
+            try { SystemParametersInfo(0x0057 /* SPI_SETCURSORS */, 0, IntPtr.Zero, 0); } catch { }
+            _cursorHidden = false;
+        }
+    }
 }

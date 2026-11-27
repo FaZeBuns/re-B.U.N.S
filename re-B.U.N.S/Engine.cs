@@ -230,6 +230,7 @@ public sealed class Engine : IDisposable
         _stop = true;
         _tickThread?.Join(500);
         SetLocked(false);
+        Native.RestoreSystemCursors();
         Running = false;
         try { _xboxPad?.Disconnect(); } catch { }
         try { _ds4Pad?.Disconnect(); } catch { }
@@ -259,6 +260,7 @@ public sealed class Engine : IDisposable
         }
         else
         {
+            Native.SetSystemCursorHidden(false);
             if (_savedCursorPos.X > 0 || _savedCursorPos.Y > 0)
                 Native.SetCursorPos(_savedCursorPos.X, _savedCursorPos.Y);
         }
@@ -267,6 +269,7 @@ public sealed class Engine : IDisposable
         Array.Clear(_down);
         Array.Clear(_isDoubleTapHold);
         Locked = v;
+        Native.SetSystemCursorHidden(Active);
         StateChanged?.Invoke();
     }
 
@@ -758,6 +761,7 @@ public sealed class Engine : IDisposable
         {
             ProcessOk = ok;
             if (!ok) Array.Clear(_down);
+            Native.SetSystemCursorHidden(Active);
             StateChanged?.Invoke();
         }
     }
@@ -765,6 +769,7 @@ public sealed class Engine : IDisposable
     public void Dispose()
     {
         Stop();
+        Native.RestoreSystemCursors();
         if (_hookThreadId != 0) Native.PostThreadMessage(_hookThreadId, Native.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
         _client?.Dispose();
     }
