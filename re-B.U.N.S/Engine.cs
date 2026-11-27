@@ -720,25 +720,37 @@ public sealed class Engine : IDisposable
     {
         var p = _profile;
         string name = "";
-        IntPtr fg = Native.GetForegroundWindow();
-        // When user presses Ctrl+Alt+Delete, Windows switches to the Secure Desktop (Winlogon) and GetForegroundWindow() becomes IntPtr.Zero
-        if (Running && fg == IntPtr.Zero)
+
+        // Detect actual Ctrl+Alt+Delete Secure Desktop (Winlogon) — NOT transient fg == IntPtr.Zero when closing/switching apps!
+        if (Running)
         {
-            ThreadPool.QueueUserWorkItem(_ => Stop());
-            return;
-        }
-        try
-        {
-            Native.GetWindowThreadProcessId(fg, out var pid);
-            using var proc = Process.GetProcessById((int)pid);
-            name = proc.ProcessName + ".exe";
-            if (Running && name.Equals("Taskmgr.exe", StringComparison.OrdinalIgnoreCase) && (_rawDown[0xA2] || _rawDown[0xA4]))
+            IntPtr hDesk = Native.OpenInputDesktop(0, false, 0x0001); // DESKTOP_READOBJECTS
+            if (hDesk == IntPtr.Zero)
             {
-                ThreadPool.QueueUserWorkItem(_ => Stop());
-                return;
+                int err = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
+                if (err == 5) // ERROR_ACCESS_DENIED => Secure Desktop (Ctrl+Alt+Delete)
+                {
+                    ThreadPool.QueueUserWorkItem(_ => Stop());
+                    return;
+                }
+            }
+            else
+            {
+                Native.CloseDesktop(hDesk);
             }
         }
-        catch { }
+
+        IntPtr fg = Native.GetForegroundWindow();
+        if (fg != IntPtr.Zero)
+        {
+            try
+            {
+                Native.GetWindowThreadProcessId(fg, out var pid);
+                using var proc = Process.GetProcessById((int)pid);
+                name = proc.ProcessName + ".exe";
+            }
+            catch { }
+        }
         ForegroundProcess = name;
         bool ok = p == null || !p.OnlyWhenProcessFocused || p.Processes.Count == 0 ||
                   p.Processes.Any(x => string.Equals(x.Trim(), name, StringComparison.OrdinalIgnoreCase));
