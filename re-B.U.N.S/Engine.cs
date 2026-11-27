@@ -81,6 +81,48 @@ public static class InputNames
     }
 }
 
+/// <summary>
+/// Hides the Windows cursor system-wide while the virtual pad owns the mouse.
+/// Swallowing WM_MOUSEMOVE only freezes the pointer; it stays drawn in the middle of the
+/// Remote Play / cloud window. We swap every system cursor for a transparent one and put
+/// the user's cursor scheme back with SPI_SETCURSORS.
+/// </summary>
+public static class CursorHider
+{
+    static readonly uint[] Ids = { 32512, 32513, 32514, 32515, 32516, 32640, 32641, 32642, 32643, 32644, 32645, 32646, 32648, 32649, 32650, 32651 };
+    static int _hidden;
+
+    static CursorHider()
+    {
+        // Never leave the user with an invisible cursor if the app exits or crashes while locked.
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => Show();
+        AppDomain.CurrentDomain.UnhandledException += (_, _) => Show();
+    }
+
+    public static void Hide()
+    {
+        if (Interlocked.Exchange(ref _hidden, 1) == 1) return;
+        int w = Native.GetSystemMetrics(13), h = Native.GetSystemMetrics(14); // SM_CXCURSOR / SM_CYCURSOR
+        if (w <= 0) w = 32;
+        if (h <= 0) h = 32;
+        int bytes = ((w + 15) / 16) * 2 * h;
+        var and = new byte[bytes]; Array.Fill(and, (byte)0xFF);
+        var xor = new byte[bytes];
+        foreach (var id in Ids)
+        {
+            // SetSystemCursor takes ownership of (and destroys) the handle, so each id needs its own.
+            var cur = Native.CreateCursor(IntPtr.Zero, 0, 0, w, h, and, xor);
+            if (cur != IntPtr.Zero) Native.SetSystemCursor(cur, id);
+        }
+    }
+
+    public static void Show()
+    {
+        if (Interlocked.Exchange(ref _hidden, 0) == 0) return;
+        Native.SystemParametersInfo(Native.SPI_SETCURSORS, 0, IntPtr.Zero, 0);
+    }
+}
+
 public struct PadSnapshot
 {
     public uint ButtonsMask;
@@ -247,8 +289,10 @@ public sealed class Engine : IDisposable
         if (v)
         {
             Native.GetCursorPos(out _savedCursorPos);
-            int cx = (int)System.Windows.SystemParameters.PrimaryScreenWidth / 2;
-            int cy = (int)System.Windows.SystemParameters.PrimaryScreenHeight / 2;
+            // Physical pixels: the app is PerMonitorV2 DPI-aware, so WPF's SystemParameters (DIPs)
+            // would put the "center" up-left of the real middle on 125%/150% scaled displays.
+            int cx = Native.GetSystemMetrics(0) / 2; // SM_CXSCREEN
+            int cy = Native.GetSystemMetrics(1) / 2; // SM_CYSCREEN
             if (cx <= 0) cx = 960;
             if (cy <= 0) cy = 540;
             _centerPt = new Native.POINT { X = cx, Y = cy };
@@ -486,18 +530,31 @@ public sealed class Engine : IDisposable
                 double lt = 0, rt = 0, lx = 0, ly = 0, rx = 0, ry = 0;
 
                 bool active = Active;
+                if (active) CursorHider.Hide(); else CursorHider.Show();
                 _down[InputNames.WheelUp] = _rawDown[InputNames.WheelUp] = tick < _wheelUpUntil;
                 _down[InputNames.WheelDown] = _rawDown[InputNames.WheelDown] = tick < _wheelDownUntil;
 
                 if (active)
                 {
+                    var overridden = ScenarioOverrides(binds, CurrentScenario);
                     for (int i = 0; i < binds.Length; i++)
                     {
                         var (code, b) = binds[i];
-                        if (!string.IsNullOrEmpty(b.Scenario) &&
+                        bool isGlobal = string.IsNullOrEmpty(b.Scenario) || b.Scenario.Equals("All", StringComparison.OrdinalIgnoreCase);
+                        // A key bound in the current scenario (e.g. W = gas in Vehicles) overrides its "All"
+                        // binding (W = walk), instead of pressing both controller inputs at once.
+                        if ((isGlobal && overridden[code]) ||
+                            !string.IsNullOrEmpty(b.Scenario) &&
                             !b.Scenario.Equals("All", StringComparison.OrdinalIgnoreCase) &&
                             !b.Scenario.Equals(CurrentScenario, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // Keep inactive-scenario binds in sync so pressing F1-F4 doesn't replay
+                            // presses that happened while that scenario was off (phantom taps/toggles).
+                            _lastPress[i] = _pressCount[code];
+                            _lastTap[i] = _tapCount[code];
+                            _lastDoubleTap[i] = _doubleTapCount[code];
                             continue;
+                        }
 
                         bool newEdge = false;
                         bool heldSignal = false;
@@ -616,8 +673,26 @@ public sealed class Engine : IDisposable
         finally
         {
             Submit(0, 0, 0, 0, 0, 0, 0);
+            CursorHider.Show();
             Native.timeEndPeriod(1);
         }
+    }
+
+    CBind[] _ovBinds;
+    string _ovScenario;
+    bool[] _ovCodes = new bool[InputNames.Max];
+
+    /// <summary>Codes that have at least one binding specific to <paramref name="scenario"/> (cached per binds/scenario).</summary>
+    bool[] ScenarioOverrides(CBind[] binds, string scenario)
+    {
+        if (ReferenceEquals(binds, _ovBinds) && string.Equals(scenario, _ovScenario, StringComparison.OrdinalIgnoreCase))
+            return _ovCodes;
+        var codes = new bool[InputNames.Max];
+        foreach (var (code, b) in binds)
+            if (!string.IsNullOrEmpty(b.Scenario) && b.Scenario.Equals(scenario, StringComparison.OrdinalIgnoreCase))
+                codes[code] = true;
+        _ovCodes = codes; _ovBinds = binds; _ovScenario = scenario;
+        return codes;
     }
 
     static void Circle(ref double x, ref double y)
@@ -765,6 +840,7 @@ public sealed class Engine : IDisposable
     public void Dispose()
     {
         Stop();
+        CursorHider.Show();
         if (_hookThreadId != 0) Native.PostThreadMessage(_hookThreadId, Native.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
         _client?.Dispose();
     }

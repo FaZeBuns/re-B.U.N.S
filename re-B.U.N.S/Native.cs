@@ -44,6 +44,11 @@ static class Native
     [DllImport("user32.dll")] public static extern uint MapVirtualKey(uint code, uint type);
     [DllImport("user32.dll", SetLastError = true)] public static extern IntPtr OpenInputDesktop(uint dwFlags, bool fInherit, uint dwDesiredAccess);
     [DllImport("user32.dll", SetLastError = true)] public static extern bool CloseDesktop(IntPtr hDesktop);
+    [DllImport("user32.dll")] public static extern int GetSystemMetrics(int index);
+    [DllImport("user32.dll", SetLastError = true)] public static extern IntPtr CreateCursor(IntPtr hInst, int xHot, int yHot, int w, int h, byte[] andPlane, byte[] xorPlane);
+    [DllImport("user32.dll", SetLastError = true)] public static extern bool SetSystemCursor(IntPtr hcur, uint id);
+    [DllImport("user32.dll", SetLastError = true)] public static extern bool SystemParametersInfo(uint action, uint param, IntPtr pv, uint winIni);
+    public const uint SPI_SETCURSORS = 0x0057;
     [DllImport("winmm.dll")] public static extern uint timeBeginPeriod(uint p);
     [DllImport("winmm.dll")] public static extern uint timeEndPeriod(uint p);
 }
