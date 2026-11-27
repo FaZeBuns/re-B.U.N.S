@@ -494,6 +494,9 @@ public sealed class MacEngine : IDisposable
     int[] _lastDoubleTap = Array.Empty<int>();
     long[] _pulseUntil = Array.Empty<long>();
 
+    public string CurrentScenario { get; set; } = "On Foot";
+    long _lastMoveTick;
+
     public void StepTick(double dtMs)
     {
         long tick = Environment.TickCount64;
@@ -513,6 +516,11 @@ public sealed class MacEngine : IDisposable
             for (int i = 0; i < binds.Length; i++)
             {
                 var (code, b) = binds[i];
+                if (!string.IsNullOrEmpty(b.Scenario) &&
+                    !b.Scenario.Equals("All", StringComparison.OrdinalIgnoreCase) &&
+                    !b.Scenario.Equals(CurrentScenario, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
                 bool newEdge = false, heldSignal = false;
                 switch (b.Activator)
                 {
@@ -580,12 +588,23 @@ public sealed class MacEngine : IDisposable
 
         int dx = Interlocked.Exchange(ref _accX, 0), dy = Interlocked.Exchange(ref _accY, 0);
         var ms = p.Mouse;
-        double alpha = dtMs / (Math.Max(0, ms.SmoothingMs) + dtMs);
-        _vx += alpha * (dx / dtMs - _vx);
-        _vy += alpha * (dy / dtMs - _vy);
+        if (dx != 0 || dy != 0) _lastMoveTick = tick;
         if (active && ms.Stick != MouseStick.None)
         {
-            double ix = _vx * ms.SensitivityX / 100.0, iy = -_vy * ms.SensitivityY / 100.0;
+            double tau = Math.Clamp(ms.SmoothingMs, 2.0, 40.0);
+            double decay = Math.Exp(-dtMs / tau);
+            _vx = _vx * decay + (dx / tau);
+            _vy = _vy * decay + (dy / tau);
+
+            if (dx == 0 && dy == 0 && (tick - _lastMoveTick) > Math.Max(14, tau * 1.4))
+            {
+                _vx *= 0.45;
+                _vy *= 0.45;
+                if (Math.Abs(_vx) < 0.015) _vx = 0;
+                if (Math.Abs(_vy) < 0.015) _vy = 0;
+            }
+
+            double ix = _vx * ms.SensitivityX / 60.0, iy = -_vy * ms.SensitivityY / 60.0;
             if (ms.InvertY) iy = -iy;
             double mag = Math.Sqrt(ix * ix + iy * iy);
             if (mag > 0.004)

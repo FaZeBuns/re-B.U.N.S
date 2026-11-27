@@ -20,9 +20,9 @@ public class LanguageWindow : Window
     public LanguageWindow(string currentLanguage)
     {
         SelectedLanguage = string.IsNullOrWhiteSpace(currentLanguage) ? "en" : currentLanguage;
-        Title = "re-B.U.N.S — Select Language / Επιλέξτε γλώσσα";
-        Width = 880;
-        Height = 580;
+        Title = "re-B.U.N.S — Select Language";
+        Width = 860;
+        SizeToContent = SizeToContent.Height;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ResizeMode = ResizeMode.NoResize;
         Background = new LinearGradientBrush(Color.FromRgb(0x72, 0x38, 0x6C), Color.FromRgb(0x22, 0x10, 0x2C), 65);
@@ -97,21 +97,35 @@ public class LanguageWindow : Window
                 BorderBrush = isCurrent ? NeonCyan : new SolidColorBrush(Color.FromArgb(90, 0xFF, 0xFF, 0xFF)),
                 BorderThickness = new Thickness(isCurrent ? 2 : 1),
                 CornerRadius = new CornerRadius(6),
-                Padding = new Thickness(14, 12, 14, 12),
+                Padding = new Thickness(14, 10, 14, 10),
                 Margin = new Thickness(6),
+                MinHeight = 66,
                 Cursor = Cursors.Hand
             };
 
-            var row = new DockPanel();
-            var flagBlock = new TextBlock
+            var row = new DockPanel { LastChildFill = true };
+            var badge = new Border
             {
-                Text = lang.Flag,
-                FontSize = 26,
+                Background = new SolidColorBrush(Color.FromRgb(0x3D, 0x1E, 0x4E)),
+                BorderBrush = new SolidColorBrush(Color.FromArgb(120, 0x00, 0xE5, 0xFF)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(6),
+                Width = 44,
+                Height = 36,
                 Margin = new Thickness(0, 0, 14, 0),
-                VerticalAlignment = VerticalAlignment.Center
+                VerticalAlignment = VerticalAlignment.Center,
+                Child = new TextBlock
+                {
+                    Text = lang.Code.ToUpperInvariant(),
+                    FontSize = 14,
+                    FontWeight = FontWeights.ExtraBold,
+                    Foreground = NeonCyan,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
             };
-            DockPanel.SetDock(flagBlock, Dock.Left);
-            row.Children.Add(flagBlock);
+            DockPanel.SetDock(badge, Dock.Left);
+            row.Children.Add(badge);
 
             var checkBlock = new TextBlock
             {
@@ -119,6 +133,7 @@ public class LanguageWindow : Window
                 FontSize = 11, FontWeight = FontWeights.Bold,
                 Foreground = NeonCyan,
                 VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(8, 0, 0, 0),
                 Visibility = isCurrent ? Visibility.Visible : Visibility.Collapsed
             };
             DockPanel.SetDock(checkBlock, Dock.Right);
@@ -128,8 +143,9 @@ public class LanguageWindow : Window
             textStack.Children.Add(new TextBlock
             {
                 Text = lang.NativeName,
-                FontSize = 16, FontWeight = FontWeights.Bold,
-                Foreground = Brushes.White
+                FontSize = 15.5, FontWeight = FontWeights.Bold,
+                Foreground = Brushes.White,
+                Margin = new Thickness(0, 0, 0, 2)
             });
             textStack.Children.Add(new TextBlock
             {

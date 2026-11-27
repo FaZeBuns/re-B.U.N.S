@@ -8,9 +8,9 @@
     <AssemblyName>re-B.U.N.S</AssemblyName>
     <RootNamespace>ReBuns</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>1.6.5</Version>
-    <AssemblyVersion>1.6.5.0</AssemblyVersion>
-    <FileVersion>1.6.5.0</FileVersion>
+    <Version>1.6.6</Version>
+    <AssemblyVersion>1.6.6.0</AssemblyVersion>
+    <FileVersion>1.6.6.0</FileVersion>
     <Product>re-B.U.N.S (macOS)</Product>
     <Company>FaZeBuns</Company>
   </PropertyGroup>

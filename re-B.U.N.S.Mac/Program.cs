@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Threading;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -23,6 +25,11 @@ public static class Program
 {
     public static int Main(string[] args)
     {
+        CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+        CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+        Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+        Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
+
         if (args.Any(a => a.Equals("--self-test", StringComparison.OrdinalIgnoreCase)))
             return RunSelfTest();
 

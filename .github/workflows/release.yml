@@ -58,9 +58,9 @@ jobs:
             <key>CFBundleIdentifier</key>
             <string>com.fazebuns.rebuns</string>
             <key>CFBundleVersion</key>
-            <string>1.6.4</string>
+            <string>1.6.6</string>
             <key>CFBundleShortVersionString</key>
-            <string>1.6.4</string>
+            <string>1.6.6</string>
             <key>CFBundlePackageType</key>
             <string>APPL</string>
             <key>CFBundleExecutable</key>
@@ -113,4 +113,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "v1.6.4-mac" "re-B.U.N.S-macOS.dmg" "re-B.U.N.S-macOS-intel.dmg" --clobber
+          gh release upload "v1.6.6-mac" "re-B.U.N.S-macOS.dmg" "re-B.U.N.S-macOS-intel.dmg" --clobber

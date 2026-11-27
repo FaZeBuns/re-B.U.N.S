@@ -12,8 +12,8 @@
     <img src="assets/download-windows.svg" alt="Download for Windows" width="410" />
   </a>
   &nbsp;&nbsp;
-  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.4-mac">
-    <img src="assets/download-mac.svg" alt="Download for macOS" width="410" />
+  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.6-mac">
+    <img src="assets/download-mac-v2.svg" alt="Download for macOS" width="410" />
   </a>
 </p>
 
@@ -22,7 +22,7 @@
     <img src="https://img.shields.io/badge/Windows-re--BUNS.exe-00a2ed?logo=windows&style=for-the-badge" alt="Windows Download" />
   </a>
   &nbsp;
-  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.4-mac">
+  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.6-mac">
     <img src="https://img.shields.io/badge/macOS-re--B.U.N.S--macOS.zip-3ddc97?logo=apple&style=for-the-badge" alt="macOS Download" />
   </a>
   &nbsp;
@@ -43,7 +43,7 @@
 3. Choose your GTA 6 Control Scheme preset, switch layout between **Xbox** and **PlayStation** anytime, and click **`▶ START VIRTUAL PAD`**.
 
 ### 🍏 macOS Setup (3 Steps)
-1. Download **[`re-B.U.N.S-macOS.zip`](https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.4-mac)** (via the macOS button above).
+1. Download **[`re-B.U.N.S-macOS.zip`](https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.6-mac)** (via the macOS button above).
 2. Extract the zip and drag **`re-B.U.N.S.app`** into your **`/Applications`** folder.
 3. Open **System Settings → Privacy & Security → Accessibility** and enable **`re-B.U.N.S`**.
 4. Click **`▶ START VIRTUAL PAD`**, then launch your game or click **`🌐 Launch Cloud`**!

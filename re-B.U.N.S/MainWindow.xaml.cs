@@ -129,7 +129,7 @@ public partial class MainWindow : Window
         for (int i = 0; i < Localization.SupportedLanguages.Length; i++)
         {
             var l = Localization.SupportedLanguages[i];
-            LanguageCombo.Items.Add($"{l.Flag} {l.NativeName}");
+            LanguageCombo.Items.Add($"🌐 {l.Code.ToUpperInvariant()} · {l.NativeName}");
             if (l.Code.Equals(Localization.CurrentLanguage, StringComparison.OrdinalIgnoreCase))
                 selIdx = i;
         }
