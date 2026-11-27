@@ -169,6 +169,15 @@ public partial class MainWindow : Window
         catch { }
     }
 
+    void ScrollViewer_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+    {
+        if (sender is ScrollViewer sv && !e.Handled)
+        {
+            sv.ScrollToVerticalOffset(sv.VerticalOffset - e.Delta * 0.65);
+            e.Handled = true;
+        }
+    }
+
     void ApplyLanguage()
     {
         try
@@ -841,6 +850,15 @@ public partial class MainWindow : Window
             rowPanel.Children.Add(keyPill);
         }
 
+        var fitBox = new Viewbox
+        {
+            Stretch = Stretch.Uniform,
+            StretchDirection = StretchDirection.DownOnly,
+            HorizontalAlignment = isLeft ? HorizontalAlignment.Right : HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center,
+            Child = rowPanel
+        };
+
         var rowBorder = new Border
         {
             Width = width,
@@ -851,7 +869,7 @@ public partial class MainWindow : Window
             CornerRadius = new CornerRadius(6),
             Padding = new Thickness(6, 2, 6, 2),
             Cursor = System.Windows.Input.Cursors.Hand,
-            Child = rowPanel
+            Child = fitBox
         };
         Canvas.SetLeft(rowBorder, x);
         Canvas.SetTop(rowBorder, y);
