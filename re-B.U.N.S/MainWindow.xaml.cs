@@ -62,6 +62,9 @@ public partial class MainWindow : Window
         InitializeComponent();
         VersionText.Text = Updater.CurrentVersionString;
 
+        Localization.CurrentLanguage = AppSettings.Instance.Language;
+        InitLanguageCombo();
+
         BuildPreviewCategories();
         BuildPad();
         BuildKeyboardAndMouse();
@@ -89,11 +92,16 @@ public partial class MainWindow : Window
         SetupTray();
         RefreshDriverBadge();
         UpdateHoldViewButtons();
+        ApplyLanguage();
         UpdateStatus();
 
         Loaded += async (_, _) =>
         {
             await RunLaunchAnimationAsync();
+            if (!AppSettings.Instance.HasCompletedLanguageSetup)
+            {
+                ShowLanguagePickerDialog();
+            }
             // Auto-detect if ViGEmBus driver is missing on this PC; if missing, pop up the built-in setup installer automatically!
             if (!DriverHelper.IsViGEmInstalled())
             {
@@ -109,6 +117,69 @@ public partial class MainWindow : Window
             if (AppSettings.Instance.AutoCheckUpdates)
                 await CheckForUpdatesAsync(silentIfUpToDate: true);
         };
+    }
+
+    bool _updatingLangCombo;
+
+    void InitLanguageCombo()
+    {
+        _updatingLangCombo = true;
+        LanguageCombo.Items.Clear();
+        int selIdx = 0;
+        for (int i = 0; i < Localization.SupportedLanguages.Length; i++)
+        {
+            var l = Localization.SupportedLanguages[i];
+            LanguageCombo.Items.Add($"{l.Flag} {l.NativeName}");
+            if (l.Code.Equals(Localization.CurrentLanguage, StringComparison.OrdinalIgnoreCase))
+                selIdx = i;
+        }
+        LanguageCombo.SelectedIndex = selIdx;
+        _updatingLangCombo = false;
+    }
+
+    void LanguageCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_updatingLangCombo || LanguageCombo.SelectedIndex < 0 || LanguageCombo.SelectedIndex >= Localization.SupportedLanguages.Length)
+            return;
+        string code = Localization.SupportedLanguages[LanguageCombo.SelectedIndex].Code;
+        Localization.CurrentLanguage = code;
+        AppSettings.Instance.Language = code;
+        AppSettings.Instance.HasCompletedLanguageSetup = true;
+        AppSettings.Instance.Save();
+        ApplyLanguage();
+        UpdateStatus();
+    }
+
+    void ShowLanguagePickerDialog()
+    {
+        try
+        {
+            var dlg = new LanguageWindow(AppSettings.Instance.Language) { Owner = this };
+            if (dlg.ShowDialog() == true)
+            {
+                Localization.CurrentLanguage = dlg.SelectedLanguage;
+                AppSettings.Instance.Language = dlg.SelectedLanguage;
+            }
+            AppSettings.Instance.HasCompletedLanguageSetup = true;
+            AppSettings.Instance.Save();
+            InitLanguageCombo();
+            ApplyLanguage();
+            UpdateStatus();
+        }
+        catch { }
+    }
+
+    void ApplyLanguage()
+    {
+        try
+        {
+            Title = Localization.T("AppTitle");
+            if (SettingsHeaderTitle != null) SettingsHeaderTitle.Text = Localization.T("Settings");
+            if (UpdateBtn != null) UpdateBtn.Content = Localization.T("CheckUpdates");
+            if (Footer != null) Footer.Text = Localization.T("HotkeysFooter");
+            RefreshDriverBadge();
+        }
+        catch { }
     }
 
     void PlayIntroSound()
@@ -246,20 +317,40 @@ public partial class MainWindow : Window
             row.MouseLeave += (_, _) => UpdatePreviewRowVisual(row, lbl, outerEllipse, false);
             row.MouseLeftButtonDown += (_, _) =>
             {
-                _previewCategory = captured.ToUpperInvariant();
-                if (_schematicHeaderText != null) _schematicHeaderText.Text = _previewCategory;
-                foreach (var pr in _previewRows)
-                {
-                    bool sel = pr.Name == captured;
-                    pr.Dot.Visibility = sel ? Visibility.Visible : Visibility.Collapsed;
-                    pr.Label.FontWeight = sel ? FontWeights.Bold : FontWeights.Normal;
-                    pr.Label.Foreground = sel ? Brushes.White : (Brush)FindResource("Dim");
-                }
+                SelectScenario(captured);
                 UpdatePreviewRowVisual(row, lbl, outerEllipse, row.IsMouseOver);
             };
             PreviewList.Children.Add(row);
             _previewRows.Add((cat, innerDot, lbl));
         }
+    }
+
+    string _activeScenarioName = "On Foot";
+
+    void SelectScenario(string scenarioName)
+    {
+        if (string.IsNullOrWhiteSpace(scenarioName)) scenarioName = "On Foot";
+        _activeScenarioName = scenarioName;
+        _previewCategory = scenarioName.ToUpperInvariant();
+        _engine.CurrentScenario = scenarioName;
+        if (_cur != null) _cur.ActiveScenario = scenarioName;
+
+        if (_schematicHeaderText != null)
+            _schematicHeaderText.Text = _previewCategory + (_controllerType == ControllerType.PlayStation ? "  ·  PLAYSTATION" : "  ·  XBOX");
+
+        foreach (var pr in _previewRows)
+        {
+            bool sel = pr.Name.Equals(scenarioName, StringComparison.OrdinalIgnoreCase);
+            pr.Dot.Visibility = sel ? Visibility.Visible : Visibility.Collapsed;
+            pr.Label.FontWeight = sel ? FontWeights.Bold : FontWeights.Normal;
+            pr.Label.Foreground = sel ? Brushes.White : (Brush)FindResource("Dim");
+        }
+
+        if (ScenarioFilterCombo != null && ScenarioFilterCombo.Items.Contains(scenarioName))
+            ScenarioFilterCombo.SelectedItem = scenarioName;
+
+        ApplyBindingsFilter();
+        Changed();
     }
 
     // ================= Control Scheme 1/3, 2/3, 3/3 Cycling =================
@@ -1278,10 +1369,23 @@ public partial class MainWindow : Window
         });
     }
 
+    static readonly string[] AllScenarioOptions =
+    {
+        "All", "On Foot", "Land / Water Vehicles", "Melee", "Aiming", "Aircraft", "Bicycle"
+    };
+
     // ================= Tab 4: All Bindings Grid =================
     void BuildGrid()
     {
-        var keyCol = new DataGridTemplateColumn { Header = "Key / Mouse Input", Width = 165 };
+        if (ScenarioFilterCombo != null)
+        {
+            ScenarioFilterCombo.Items.Clear();
+            ScenarioFilterCombo.Items.Add("All Scenarios");
+            foreach (var sc in AllScenarioOptions) ScenarioFilterCombo.Items.Add(sc);
+            ScenarioFilterCombo.SelectedIndex = 0;
+        }
+
+        var keyCol = new DataGridTemplateColumn { Header = "Key / Mouse Input", Width = 155 };
         var f = new FrameworkElementFactory(typeof(Button));
         f.SetBinding(ContentProperty, new WBinding("Input") { Converter = new PrettyConv() });
         f.SetValue(PaddingProperty, new Thickness(8, 3, 8, 3));
@@ -1292,20 +1396,25 @@ public partial class MainWindow : Window
         Grid.Columns.Add(keyCol);
         Grid.Columns.Add(new DataGridComboBoxColumn
         {
-            Header = "Controller Button", Width = 155, ItemsSource = Enum.GetValues<PadTarget>(),
+            Header = "Scenario", Width = 160, ItemsSource = AllScenarioOptions,
+            SelectedItemBinding = new WBinding("Scenario") { UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged }
+        });
+        Grid.Columns.Add(new DataGridComboBoxColumn
+        {
+            Header = "Controller Button", Width = 145, ItemsSource = Enum.GetValues<PadTarget>(),
             SelectedItemBinding = new WBinding("Target") { UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged }
         });
         Grid.Columns.Add(new DataGridComboBoxColumn
         {
-            Header = "Key Activator (Tap / Hold / 2x)", Width = 210, ItemsSource = Enum.GetValues<KeyActivator>(),
+            Header = "Key Activator (Tap / Hold / 2x)", Width = 195, ItemsSource = Enum.GetValues<KeyActivator>(),
             SelectedItemBinding = new WBinding("Activator") { UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged }
         });
         Grid.Columns.Add(new DataGridComboBoxColumn
         {
-            Header = "Output Mode", Width = 140, ItemsSource = Enum.GetValues<BindMode>(),
+            Header = "Output Mode", Width = 130, ItemsSource = Enum.GetValues<BindMode>(),
             SelectedItemBinding = new WBinding("Mode") { UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged }
         });
-        Grid.Columns.Add(new DataGridTextColumn { Header = "Amount %", Width = 90, Binding = new WBinding("Amount") });
+        Grid.Columns.Add(new DataGridTextColumn { Header = "Amount %", Width = 80, Binding = new WBinding("Amount") });
         Grid.Columns.Add(new DataGridTextColumn { Header = "GTA 6 Action / Note", Width = new DataGridLength(1, DataGridLengthUnitType.Star), Binding = new WBinding("Note") });
         var hdr = new Style(typeof(System.Windows.Controls.Primitives.DataGridColumnHeader));
         hdr.Setters.Add(new Setter(BackgroundProperty, new SolidColorBrush(Color.FromRgb(0x35, 0x1B, 0x42))));
@@ -1315,23 +1424,35 @@ public partial class MainWindow : Window
         Grid.ColumnHeaderStyle = hdr;
     }
 
-    void FilterBox_TextChanged(object sender, TextChangedEventArgs e)
+    void ScenarioFilterCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) => ApplyBindingsFilter();
+
+    void FilterBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyBindingsFilter();
+
+    void ApplyBindingsFilter()
     {
         if (_cur == null) return;
-        string q = FilterBox.Text.Trim();
-        if (string.IsNullOrEmpty(q))
+        string q = FilterBox?.Text.Trim() ?? "";
+        string scFilter = ScenarioFilterCombo?.SelectedItem as string ?? "All Scenarios";
+
+        IEnumerable<Binding> list = _cur.Bindings;
+        if (scFilter != "All Scenarios" && scFilter != "All")
         {
-            Grid.ItemsSource = _cur.Bindings;
+            list = list.Where(b =>
+                string.IsNullOrEmpty(b.Scenario) ||
+                b.Scenario.Equals("All", StringComparison.OrdinalIgnoreCase) ||
+                b.Scenario.Equals(scFilter, StringComparison.OrdinalIgnoreCase));
         }
-        else
+        if (!string.IsNullOrEmpty(q))
         {
-            Grid.ItemsSource = _cur.Bindings.Where(b =>
+            list = list.Where(b =>
                 InputNames.Pretty(b.Input).Contains(q, StringComparison.OrdinalIgnoreCase) ||
                 b.Input.Contains(q, StringComparison.OrdinalIgnoreCase) ||
                 b.Target.ToString().Contains(q, StringComparison.OrdinalIgnoreCase) ||
                 b.Activator.ToString().Contains(q, StringComparison.OrdinalIgnoreCase) ||
-                (b.Note ?? "").Contains(q, StringComparison.OrdinalIgnoreCase)).ToList();
+                (b.Scenario ?? "").Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                (b.Note ?? "").Contains(q, StringComparison.OrdinalIgnoreCase));
         }
+        Grid.ItemsSource = list.ToList();
     }
 
     class PrettyConv : IValueConverter
@@ -1356,9 +1477,11 @@ public partial class MainWindow : Window
     {
         if (_cur == null) return;
         FilterBox.Text = "";
-        var b = new Binding { Input = "", Target = PadTarget.A };
+        string sc = ScenarioFilterCombo?.SelectedItem as string ?? _activeScenarioName;
+        if (sc == "All Scenarios") sc = _activeScenarioName;
+        var b = new Binding { Input = "", Target = PadTarget.A, Scenario = sc };
         _cur.Bindings.Add(b);
-        Grid.ItemsSource = _cur.Bindings;
+        ApplyBindingsFilter();
         Changed();
         Grid.SelectedItem = b;
         Grid.ScrollIntoView(b);
@@ -1703,7 +1826,7 @@ public partial class MainWindow : Window
 
     void UpdateStatus()
     {
-        StartBtn.Content = _engine.Running ? "■  STOP VIRTUAL PAD" : "▶  START VIRTUAL PAD";
+        StartBtn.Content = _engine.Running ? Localization.T("StopPad") : Localization.T("StartPad");
         StartBtn.Background = _engine.Running
             ? new SolidColorBrush(Color.FromRgb(0x9A, 0x28, 0x42))
             : new SolidColorBrush(Color.FromRgb(0x1E, 0x8A, 0x5A));
@@ -1711,11 +1834,26 @@ public partial class MainWindow : Window
             ? new SolidColorBrush(Color.FromRgb(0xFF, 0x80, 0x9B))
             : new SolidColorBrush(Color.FromRgb(0x3D, 0xDC, 0x97));
 
+        if (!string.Equals(_activeScenarioName, _engine.CurrentScenario, StringComparison.OrdinalIgnoreCase))
+        {
+            _activeScenarioName = _engine.CurrentScenario;
+            _previewCategory = _activeScenarioName.ToUpperInvariant();
+            if (_schematicHeaderText != null)
+                _schematicHeaderText.Text = _previewCategory + (_controllerType == ControllerType.PlayStation ? "  ·  PLAYSTATION" : "  ·  XBOX");
+            foreach (var pr in _previewRows)
+            {
+                bool sel = pr.Name.Equals(_activeScenarioName, StringComparison.OrdinalIgnoreCase);
+                pr.Dot.Visibility = sel ? Visibility.Visible : Visibility.Collapsed;
+                pr.Label.FontWeight = sel ? FontWeights.Bold : FontWeights.Normal;
+                pr.Label.Foreground = sel ? Brushes.White : (Brush)FindResource("Dim");
+            }
+        }
+
         string text; Color c;
-        if (!_engine.Running) { text = "STOPPED"; c = Color.FromRgb(0x3B, 0x1D, 0x47); }
-        else if (!_engine.ProcessOk) { text = "PAUSED · Waiting for Game"; c = Color.FromRgb(0x6B, 0x5A, 0x1E); }
-        else if (_engine.Locked) { text = "LOCKED · CONTROLLER ON (Win = Unlock)"; c = Color.FromRgb(0x1E, 0x8A, 0x5A); }
-        else { text = "UNLOCKED · Press Win to Lock"; c = Color.FromRgb(0x8A, 0x3A, 0x2E); }
+        if (!_engine.Running) { text = Localization.T("Stopped"); c = Color.FromRgb(0x3B, 0x1D, 0x47); }
+        else if (!_engine.ProcessOk) { text = Localization.T("WaitingGame"); c = Color.FromRgb(0x6B, 0x5A, 0x1E); }
+        else if (_engine.Locked) { text = $"{Localization.T("Running")} · {_engine.CurrentScenario.ToUpperInvariant()}"; c = Color.FromRgb(0x1E, 0x8A, 0x5A); }
+        else { text = Localization.T("Paused"); c = Color.FromRgb(0x8A, 0x3A, 0x2E); }
         StatusText.Text = text;
         StatusPill.Background = new SolidColorBrush(c);
         if (_tray != null) _tray.Text = ("re-B.U.N.S – " + text)[..Math.Min(63, ("re-B.U.N.S – " + text).Length)];

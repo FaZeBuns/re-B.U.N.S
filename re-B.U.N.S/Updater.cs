@@ -16,6 +16,8 @@ public class AppSettings
     public string GitHubToken { get; set; } = "";
     public bool AutoCheckUpdates { get; set; } = true;
     public bool HasCompletedInitialSetup { get; set; } = false;
+    public bool HasCompletedLanguageSetup { get; set; } = false;
+    public string Language { get; set; } = "en";
     public bool ShowLayoutPickerOnStartup { get; set; } = false;
     public string LastSelectedProfile { get; set; } = "";
     public ControllerType ControllerType { get; set; } = ControllerType.Xbox;
@@ -75,9 +77,7 @@ public static class Updater
     public static string CurrentVersionString =>
         $"v{CurrentVersion.Major}.{CurrentVersion.Minor}.{Math.Max(0, CurrentVersion.Build)}";
 
-    static string _cachedToken;
-
-    /// <summary>Resolves a GitHub token if available (for private repo access), or empty string for public access.</summary>
+    /// <summary>Resolves a GitHub token if explicitly provided, or empty string for standard anonymous public access.</summary>
     public static string ResolveGitHubToken()
     {
         if (!string.IsNullOrWhiteSpace(AppSettings.Instance.GitHubToken))
@@ -87,60 +87,8 @@ public static class Updater
         if (!string.IsNullOrWhiteSpace(env))
             return env.Trim();
 
-        if (_cachedToken != null)
-            return _cachedToken;
-
-        // 1. Try GitHub CLI (`gh auth token`) if installed
-        try
-        {
-            var psi = new ProcessStartInfo("gh", "auth token")
-            {
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            using var p = Process.Start(psi);
-            if (p != null)
-            {
-                string tok = p.StandardOutput.ReadToEnd().Trim();
-                p.WaitForExit(2000);
-                if (p.ExitCode == 0 && tok.Length > 10)
-                    return _cachedToken = tok;
-            }
-        }
-        catch { }
-
-        // 2. Try git credential manager
-        try
-        {
-            var psi = new ProcessStartInfo("git", "credential fill")
-            {
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            using var p = Process.Start(psi);
-            if (p != null)
-            {
-                p.StandardInput.Write("protocol=https\nhost=github.com\n\n");
-                p.StandardInput.Close();
-                string output = p.StandardOutput.ReadToEnd();
-                p.WaitForExit(2000);
-                foreach (var line in output.Split('\n'))
-                {
-                    if (line.StartsWith("password=", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var pw = line["password=".Length..].Trim();
-                        if (pw.Length > 10)
-                            return _cachedToken = pw;
-                    }
-                }
-            }
-        }
-        catch { }
-
-        return _cachedToken = "";
+        // Repository is public — never prompt or query local git credentials or gh CLI
+        return "";
     }
 
     static HttpClient CreateClient(string accept = "application/vnd.github+json")

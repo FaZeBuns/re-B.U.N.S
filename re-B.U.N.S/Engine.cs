@@ -127,7 +127,13 @@ public sealed class Engine : IDisposable
     readonly bool[] _swallowedDown = new bool[InputNames.Max];
     long _wheelUpUntil, _wheelDownUntil;
     int _accX, _accY;
+    long _lastMoveTick;
     Native.POINT _anchor;
+    Native.POINT _savedCursorPos;
+    Native.POINT _centerPt;
+    Native.POINT _lastPt;
+    volatile bool _isResettingCursor;
+    public string CurrentScenario { get; set; } = "On Foot";
 
     Thread _hookThread, _tickThread;
     uint _hookThreadId;
@@ -238,7 +244,24 @@ public sealed class Engine : IDisposable
     {
         if (v && !Running) v = false;
         if (Locked == v) return;
-        Native.GetCursorPos(out _anchor);
+        if (v)
+        {
+            Native.GetCursorPos(out _savedCursorPos);
+            int cx = (int)System.Windows.SystemParameters.PrimaryScreenWidth / 2;
+            int cy = (int)System.Windows.SystemParameters.PrimaryScreenHeight / 2;
+            if (cx <= 0) cx = 960;
+            if (cy <= 0) cy = 540;
+            _centerPt = new Native.POINT { X = cx, Y = cy };
+            _lastPt = _centerPt;
+            _anchor = _centerPt;
+            _isResettingCursor = true;
+            Native.SetCursorPos(cx, cy);
+        }
+        else
+        {
+            if (_savedCursorPos.X > 0 || _savedCursorPos.Y > 0)
+                Native.SetCursorPos(_savedCursorPos.X, _savedCursorPos.Y);
+        }
         Interlocked.Exchange(ref _accX, 0);
         Interlocked.Exchange(ref _accY, 0);
         Array.Clear(_down);
@@ -328,6 +351,15 @@ public sealed class Engine : IDisposable
             return (IntPtr)1;
         }
 
+        // Quick Scenario Switcher hotkeys: F1 (On Foot), F2 (Vehicles), F3 (Melee), F4 (Aiming)
+        if (Active && isDown)
+        {
+            if (code == 0x70) { CurrentScenario = "On Foot"; StateChanged?.Invoke(); return (IntPtr)1; }
+            if (code == 0x71) { CurrentScenario = "Land / Water Vehicles"; StateChanged?.Invoke(); return (IntPtr)1; }
+            if (code == 0x72) { CurrentScenario = "Melee"; StateChanged?.Invoke(); return (IntPtr)1; }
+            if (code == 0x73) { CurrentScenario = "Aiming"; StateChanged?.Invoke(); return (IntPtr)1; }
+        }
+
         if (!isDown && _swallowedDown[code])
         {
             _swallowedDown[code] = false;
@@ -393,8 +425,22 @@ public sealed class Engine : IDisposable
 
         if (msg == Native.WM_MOUSEMOVE)
         {
-            Interlocked.Add(ref _accX, m.pt.X - _anchor.X);
-            Interlocked.Add(ref _accY, m.pt.Y - _anchor.Y);
+            if (_isResettingCursor && m.pt.X == _centerPt.X && m.pt.Y == _centerPt.Y)
+            {
+                _isResettingCursor = false;
+                _lastPt = m.pt;
+                return (IntPtr)1;
+            }
+            _isResettingCursor = false;
+
+            int dx = m.pt.X - _centerPt.X;
+            int dy = m.pt.Y - _centerPt.Y;
+            if (dx != 0 || dy != 0)
+            {
+                Interlocked.Add(ref _accX, dx);
+                Interlocked.Add(ref _accY, dy);
+                Volatile.Write(ref _lastMoveTick, Environment.TickCount64);
+            }
             return (IntPtr)1;
         }
         if (code != 0 && down == true && _mapped[code])
@@ -448,6 +494,11 @@ public sealed class Engine : IDisposable
                     for (int i = 0; i < binds.Length; i++)
                     {
                         var (code, b) = binds[i];
+                        if (!string.IsNullOrEmpty(b.Scenario) &&
+                            !b.Scenario.Equals("All", StringComparison.OrdinalIgnoreCase) &&
+                            !b.Scenario.Equals(CurrentScenario, StringComparison.OrdinalIgnoreCase))
+                            continue;
+
                         bool newEdge = false;
                         bool heldSignal = false;
 
@@ -518,15 +569,28 @@ public sealed class Engine : IDisposable
 
                 int dx = Interlocked.Exchange(ref _accX, 0), dy = Interlocked.Exchange(ref _accY, 0);
                 var ms = p.Mouse;
-                double alpha = dt / (Math.Max(0, ms.SmoothingMs) + dt);
-                vx += alpha * (dx / dt - vx);
-                vy += alpha * (dy / dt - vy);
                 if (active && ms.Stick != MouseStick.None)
                 {
-                    double ix = vx * ms.SensitivityX / 100.0, iy = -vy * ms.SensitivityY / 100.0;
+                    // Exponential low-pass velocity filter (polling-rate independent for 125Hz–1000Hz mice)
+                    double tau = Math.Clamp(ms.SmoothingMs, 2.0, 40.0);
+                    double decay = Math.Exp(-dt / tau);
+                    vx = vx * decay + (dx / tau);
+                    vy = vy * decay + (dy / tau);
+
+                    // Crisp stop-cutoff so camera never floats/drifts after mouse stops moving
+                    long idleMs = tick - Volatile.Read(ref _lastMoveTick);
+                    if (dx == 0 && dy == 0 && idleMs > Math.Max(14, tau * 1.4))
+                    {
+                        vx *= 0.45;
+                        vy *= 0.45;
+                        if (Math.Abs(vx) < 0.015) vx = 0;
+                        if (Math.Abs(vy) < 0.015) vy = 0;
+                    }
+
+                    double ix = vx * ms.SensitivityX / 60.0, iy = -vy * ms.SensitivityY / 60.0;
                     if (ms.InvertY) iy = -iy;
                     double mag = Math.Sqrt(ix * ix + iy * iy);
-                    if (mag > 0.004)
+                    if (mag > 0.003)
                     {
                         double c = Math.Min(1, Math.Pow(Math.Min(mag, 1), Math.Max(0.1, ms.Curve)));
                         double ad = Math.Clamp(ms.AntiDeadzone, 0, 95) / 100.0;

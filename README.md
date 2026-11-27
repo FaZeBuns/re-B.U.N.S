@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.5-windows">
+  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.6-windows">
     <img src="assets/download-windows.svg" alt="Download for Windows" width="410" />
   </a>
   &nbsp;&nbsp;
@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.5-windows">
+  <a href="https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.6-windows">
     <img src="https://img.shields.io/badge/Windows-re--BUNS.exe-00a2ed?logo=windows&style=for-the-badge" alt="Windows Download" />
   </a>
   &nbsp;
@@ -38,7 +38,7 @@
 ## 🚀 Downloads & Quick Start
 
 ### 🪟 Windows Setup (3 Steps)
-1. Download **[`re-BUNS.exe`](https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.5-windows)** (via the Windows button above).
+1. Download **[`re-BUNS.exe`](https://github.com/FaZeBuns/re-B.U.N.S/releases/tag/v1.6.6-windows)** (via the Windows button above).
 2. Double-click **`re-BUNS.exe`** (single standalone file — if ViGEmBus driver is needed, it installs automatically with 1 click).
 3. Choose your GTA 6 Control Scheme preset, switch layout between **Xbox** and **PlayStation** anytime, and click **`▶ START VIRTUAL PAD`**.
 

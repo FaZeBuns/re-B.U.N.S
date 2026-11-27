@@ -216,6 +216,7 @@ public class Binding
     public int Amount { get; set; } = 100;
     public int TurboMs { get; set; } = 60;
     public string Note { get; set; } = "";
+    public string Scenario { get; set; } = "On Foot";
 }
 
 public class MouseSettings
@@ -234,6 +235,7 @@ public class Profile
     public string Name { get; set; } = "New Profile";
     public GtaLayoutId LayoutId { get; set; } = GtaLayoutId.Custom;
     public ControllerType ControllerType { get; set; } = ControllerType.Xbox;
+    public string ActiveScenario { get; set; } = "On Foot";
     public List<string> Processes { get; set; } = new();
     public bool OnlyWhenProcessFocused { get; set; }
     public bool BlockUnmappedKeys { get; set; }
@@ -459,8 +461,8 @@ public class Profile
             LayoutId = info.Id,
             Processes = { "Greenlight.exe", "XboxPcApp.exe", "GameBar.exe", "chrome.exe", "msedge.exe", "brave.exe", "GTA6.exe", "PlayGTA6.exe" },
         };
-        void B(string k, PadTarget t, string n = "", KeyActivator act = KeyActivator.Regular, BindMode mode = BindMode.Hold) =>
-            p.Bindings.Add(new Binding { Input = k, Target = t, Note = n, Activator = act, Mode = mode });
+        void B(string k, PadTarget t, string n = "", KeyActivator act = KeyActivator.Regular, BindMode mode = BindMode.Hold, string sc = "All") =>
+            p.Bindings.Add(new Binding { Input = k, Target = t, Note = n, Activator = act, Mode = mode, Scenario = sc });
 
         if (id == GtaLayoutId.ReBuns)
         {
@@ -471,39 +473,74 @@ public class Profile
             p.Mouse.AntiDeadzone = 32.5; // 10648 / 32767
             p.Mouse.SmoothingMs = 12.0;
 
-            B("Escape",      PadTarget.Start,       "Pause Menu (Start)");
-            B("Back",        PadTarget.B,           "Cancel / Back (B)");
-            B("Tab",         PadTarget.LB,          "Weapon Wheel / Holster (LB)");
-            B("Q",           PadTarget.LB,          "Take Cover (LB)");
-            B("W",           PadTarget.LStickUp,    "Move Forward (LS Up)");
-            B("E",           PadTarget.RB,          "Action / Horn (RB)");
-            B("R",           PadTarget.X,           "Reload / Melee (X)");
-            B("T",           PadTarget.DRight,      "Detonate / Partner Menu (D-Right)");
-            B("Return",      PadTarget.A,           "Accept (A)");
-            B("LControlKey", PadTarget.RS,          "Crouch / Look Behind (R3)");
-            B("A",           PadTarget.LStickLeft,  "Move Left (LS Left)");
-            B("S",           PadTarget.LStickDown,  "Move Back (LS Down)");
-            B("D",           PadTarget.LStickRight, "Move Right (LS Right)");
-            B("F",           PadTarget.Y,           "Enter Vehicle / Interact (Y)");
-            B("LShiftKey",   PadTarget.LS,          "Run / Sprint (L3)");
-            B("Z",           PadTarget.DDown,       "Objective / Quick Nav (D-Down)");
-            B("X",           PadTarget.B,           "Crouch / Rest / Cancel (B)");
-            B("C",           PadTarget.RS,          "Look Behind (R3)");
-            B("V",           PadTarget.Back,        "Camera / Map (Back)");
-            B("B",           PadTarget.DUp,         "Cellphone / Waink App (D-Up)");
-            B("N",           PadTarget.DLeft,       "Radio Controls / Menu (D-Left)");
-            B("M",           PadTarget.Back,        "Map (Back)");
-            B("Oemcomma",    PadTarget.Start,       "Pause Menu (Start)");
-            B("Space",       PadTarget.A,           "Jump / Climb (A)");
-            B("Up",          PadTarget.DUp,         "Cellphone / Waink App (D-Up)");
-            B("Left",        PadTarget.DLeft,       "Radio Controls / Menu (D-Left)");
-            B("Right",       PadTarget.DRight,      "Detonate / Partner Menu (D-Right)");
-            B("Down",        PadTarget.DDown,       "Objective / Quick Nav (D-Down)");
-            B("Mouse1",      PadTarget.RT,          "Shoot (RT)");
-            B("Mouse2",      PadTarget.LT,          "Aim / Interact (LT)");
-            B("Mouse3",      PadTarget.RB,          "Action / Cover (RB)");
-            B("WheelUp",     PadTarget.Y,           "Weapon Next (Y)");
-            B("WheelDown",   PadTarget.Y,           "Weapon Prev (Y)");
+            // Global Menus & Navigation (Active across all scenarios)
+            B("Escape",      PadTarget.Start,       "Pause Menu (Start)", sc: "All");
+            B("Back",        PadTarget.B,           "Cancel / Back (B)", sc: "All");
+            B("Return",      PadTarget.A,           "Accept (A)", sc: "All");
+            B("V",           PadTarget.Back,        "Camera / Map (Back)", sc: "All");
+            B("M",           PadTarget.Back,        "Map (Back)", sc: "All");
+            B("Oemcomma",    PadTarget.Start,       "Pause Menu (Start)", sc: "All");
+            B("Up",          PadTarget.DUp,         "Cellphone / Waink App (D-Up)", sc: "All");
+            B("B",           PadTarget.DUp,         "Cellphone / Waink App (D-Up)", sc: "All");
+            B("Left",        PadTarget.DLeft,       "Radio Controls / Menu (D-Left)", sc: "All");
+            B("N",           PadTarget.DLeft,       "Radio Controls / Menu (D-Left)", sc: "All");
+            B("Right",       PadTarget.DRight,      "Detonate / Partner Menu (D-Right)", sc: "All");
+            B("T",           PadTarget.DRight,      "Detonate / Partner Menu (D-Right)", sc: "All");
+            B("Down",        PadTarget.DDown,       "Objective / Quick Nav (D-Down)", sc: "All");
+            B("Z",           PadTarget.DDown,       "Objective / Quick Nav (D-Down)", sc: "All");
+
+            // On Foot Scenario
+            B("Tab",         PadTarget.LB,          "Weapon Wheel / Holster (LB)", sc: "On Foot");
+            B("Q",           PadTarget.LB,          "Take Cover (LB)", sc: "On Foot");
+            B("W",           PadTarget.LStickUp,    "Move Forward (LS Up)", sc: "On Foot");
+            B("E",           PadTarget.RB,          "Action / Horn (RB)", sc: "On Foot");
+            B("R",           PadTarget.X,           "Reload / Melee (X)", sc: "On Foot");
+            B("LControlKey", PadTarget.RS,          "Crouch / Look Behind (R3)", sc: "On Foot");
+            B("A",           PadTarget.LStickLeft,  "Move Left (LS Left)", sc: "On Foot");
+            B("S",           PadTarget.LStickDown,  "Move Back (LS Down)", sc: "On Foot");
+            B("D",           PadTarget.LStickRight, "Move Right (LS Right)", sc: "On Foot");
+            B("F",           PadTarget.Y,           "Enter Vehicle / Interact (Y)", sc: "On Foot");
+            B("LShiftKey",   PadTarget.LS,          "Run / Sprint (L3)", sc: "On Foot");
+            B("X",           PadTarget.B,           "Crouch / Rest / Cancel (B)", sc: "On Foot");
+            B("C",           PadTarget.RS,          "Look Behind (R3)", sc: "On Foot");
+            B("Space",       PadTarget.A,           "Jump / Climb (A)", sc: "On Foot");
+            B("Mouse1",      PadTarget.RT,          "Shoot (RT)", sc: "On Foot");
+            B("Mouse2",      PadTarget.LT,          "Aim / Interact (LT)", sc: "On Foot");
+            B("Mouse3",      PadTarget.RB,          "Action / Cover (RB)", sc: "On Foot");
+            B("WheelUp",     PadTarget.Y,           "Weapon Next (Y)", sc: "On Foot");
+            B("WheelDown",   PadTarget.Y,           "Weapon Prev (Y)", sc: "On Foot");
+
+            // Land / Water Vehicles Scenario
+            B("W",           PadTarget.RT,          "Accelerate / Gas (RT)", sc: "Land / Water Vehicles");
+            B("S",           PadTarget.LT,          "Brake / Reverse (LT)", sc: "Land / Water Vehicles");
+            B("A",           PadTarget.LStickLeft,  "Steer Left (LS Left)", sc: "Land / Water Vehicles");
+            B("D",           PadTarget.LStickRight, "Steer Right (LS Right)", sc: "Land / Water Vehicles");
+            B("Space",       PadTarget.RB,          "Handbrake (RB)", sc: "Land / Water Vehicles");
+            B("E",           PadTarget.LS,          "Horn / Siren (L3)", sc: "Land / Water Vehicles");
+            B("Q",           PadTarget.DLeft,       "Next Radio Station", sc: "Land / Water Vehicles");
+            B("Mouse1",      PadTarget.LB,          "Drive-by Shoot / Weapon (LB)", sc: "Land / Water Vehicles");
+            B("Mouse2",      PadTarget.LT,          "Drive-by Aim (LT)", sc: "Land / Water Vehicles");
+            B("F",           PadTarget.Y,           "Exit Vehicle (Y)", sc: "Land / Water Vehicles");
+            B("C",           PadTarget.RS,          "Look Behind (R3)", sc: "Land / Water Vehicles");
+
+            // Melee Scenario
+            B("Mouse1",      PadTarget.B,           "Punch / Melee Attack (B)", sc: "Melee");
+            B("Space",       PadTarget.X,           "Dodge / Evade / Counter (X)", sc: "Melee");
+            B("Mouse2",      PadTarget.LT,          "Lock-On Combat Target (LT)", sc: "Melee");
+            B("R",           PadTarget.B,           "Heavy Attack / Finisher (B)", sc: "Melee");
+            B("W",           PadTarget.LStickUp,    "Step Forward", sc: "Melee");
+            B("S",           PadTarget.LStickDown,  "Step Back", sc: "Melee");
+            B("A",           PadTarget.LStickLeft,  "Strafe Left", sc: "Melee");
+            B("D",           PadTarget.LStickRight, "Strafe Right", sc: "Melee");
+
+            // Aiming Scenario
+            B("Mouse1",      PadTarget.RT,          "Fire Weapon (RT)", sc: "Aiming");
+            B("Mouse2",      PadTarget.LT,          "Fine Aim / Zoom (LT)", sc: "Aiming");
+            B("R",           PadTarget.X,           "Reload Weapon (X)", sc: "Aiming");
+            B("LShiftKey",   PadTarget.LS,          "Hold Breath / Steady Scope (L3)", sc: "Aiming");
+            B("Q",           PadTarget.LB,          "Cover / Peek (LB)", sc: "Aiming");
+            B("Space",       PadTarget.A,           "Combat Roll (A)", sc: "Aiming");
+
             return p;
         }
 
